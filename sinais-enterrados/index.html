@@ -1,0 +1,3265 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sinais Enterrados — um jogo de investigação · Luiz Toledo</title>
+<meta name="description" content="Pequeno jogo metroidvania de investigação jornalística. Caso fictício sobre desvio de emendas parlamentares. Por Luiz Toledo." />
+<meta property="og:title" content="Sinais Enterrados — um jogo de investigação" />
+<meta property="og:description" content="Apure uma denúncia anônima sobre desvio de emendas parlamentares. Fuja dos lobistas, junte provas, publique a matéria." />
+<meta property="og:type" content="website" />
+<link rel="icon" type="image/png" href="../favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body {
+    background:#050811;
+    color:#e8e3d0;
+    font-family:'JetBrains Mono', ui-monospace, monospace;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    cursor:default;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none; user-select:none;
+    touch-action:manipulation;
+    min-height:100dvh;
+  }
+  #shell {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    width:100%; height:100dvh;
+  }
+  #stage {
+    position:relative;
+    width:min(100vw, 960px);
+    aspect-ratio:960 / 544;
+    box-shadow:
+      0 0 0 1px rgba(212,160,23,.18),
+      0 30px 80px rgba(0,0,0,.8),
+      0 0 120px rgba(212,160,23,.06);
+  }
+  canvas {
+    display:block; width:100%; height:100%;
+    background:#0a0e1a;
+    image-rendering:pixelated;
+  }
+  /* CRT scanlines + vignette */
+  .scan {
+    position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.18) 3px, rgba(0,0,0,0) 4px);
+    mix-blend-mode:multiply;
+  }
+  .grain {
+    position:absolute; inset:0; pointer-events:none; opacity:.06;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* HUD */
+  .hud {
+    position:absolute; inset:14px 14px auto 14px;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    pointer-events:none; z-index:5;
+    font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  }
+  .hud-left, .hud-right { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip {
+    background:rgba(5,8,17,.78);
+    border:1px solid rgba(212,160,23,.22);
+    padding:7px 11px;
+    backdrop-filter:blur(2px);
+    color:rgba(232,227,208,.7);
+  }
+  .chip strong { color:#d4a017; font-weight:500; letter-spacing:.22em; }
+  .mute-btn {
+    cursor:pointer;
+    border:1px solid rgba(212,160,23,.35);
+    color:#d4a017;
+    font-family:inherit; font-size:13px;
+    padding:5px 9px; line-height:1;
+    transition:opacity .15s, background .15s;
+  }
+  .mute-btn:hover { background:rgba(212,160,23,.15); }
+  .mute-btn.muted { opacity:.45; color:rgba(232,227,208,.5); }
+  .hearts { display:flex; gap:5px; align-items:center; padding:6px 11px; }
+  .hearts span {
+    color:rgba(255,80,80,.18);
+    font-size:14px; line-height:1;
+    transition:color .15s, transform .15s, text-shadow .15s;
+  }
+  .hearts span.on {
+    color:#ff5050;
+    text-shadow:0 0 6px rgba(255,80,80,.6);
+  }
+  .hearts.hit span.on { animation:heartHit .35s; }
+  @keyframes heartHit {
+    0%, 100% { transform:scale(1); }
+    50% { transform:scale(1.4); }
+  }
+  .ability {
+    border:1px solid rgba(232,227,208,.08);
+    color:rgba(232,227,208,.25);
+    padding:7px 11px;
+    background:rgba(5,8,17,.78);
+    transition:all .35s;
+    position:relative;
+  }
+  .ability.on {
+    border-color:rgba(212,160,23,.55);
+    color:#d4a017;
+    box-shadow:0 0 12px rgba(212,160,23,.18) inset;
+  }
+  .ability .key {
+    display:inline-block;
+    border:1px solid currentColor;
+    padding:0 4px;
+    margin-right:6px;
+    font-size:10px;
+  }
+
+  /* Dialog */
+  .dialog {
+    position:absolute; left:50%; bottom:64px;
+    transform:translateX(-50%);
+    width:min(640px, 88%);
+    background:rgba(5,8,17,.96);
+    border:1px solid rgba(212,160,23,.7);
+    padding:18px 22px 16px;
+    z-index:6;
+    box-shadow:0 10px 40px rgba(0,0,0,.6), 0 0 30px rgba(212,160,23,.12);
+  }
+  .dialog .who {
+    font-size:10px; letter-spacing:.32em; color:#d4a017;
+    margin-bottom:8px;
+  }
+  .dialog .text {
+    font-family:'Special Elite', monospace;
+    font-size:15px; line-height:1.55; color:#e8e3d0;
+  }
+  .dialog .more {
+    margin-top:10px; font-size:10px; letter-spacing:.2em;
+    color:rgba(232,227,208,.45);
+  }
+
+  .toast {
+    position:absolute; left:50%; top:64px;
+    transform:translate(-50%, -8px);
+    background:rgba(5,8,17,.94);
+    border:1px solid #d4a017;
+    padding:10px 18px;
+    z-index:6;
+    color:#d4a017;
+    font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+    opacity:0; transition:opacity .35s, transform .35s;
+    pointer-events:none;
+    box-shadow:0 0 24px rgba(212,160,23,.25);
+  }
+  .toast.show { opacity:1; transform:translate(-50%, 0); }
+
+  .room-name {
+    position:absolute; left:50%; top:46%;
+    transform:translate(-50%,-50%);
+    font-family:'Special Elite', monospace;
+    font-size:42px; letter-spacing:.06em;
+    color:#d4a017;
+    text-shadow:0 0 30px rgba(212,160,23,.4);
+    opacity:0; transition:opacity .55s;
+    pointer-events:none; z-index:4;
+  }
+  .room-name .sub {
+    display:block; font-family:'JetBrains Mono', monospace;
+    font-size:11px; letter-spacing:.4em;
+    color:rgba(232,227,208,.55); margin-top:8px; text-transform:uppercase;
+  }
+  .room-name.show { opacity:1; }
+
+  /* Title & End screens */
+  .overlay {
+    position:absolute; inset:0; z-index:9;
+    background:radial-gradient(ellipse at 50% 30%, #0d1426 0%, #050811 70%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:40px; text-align:center;
+  }
+  .overlay h1 {
+    font-family:'Special Elite', monospace;
+    font-size:62px; letter-spacing:.04em;
+    color:#d4a017;
+    text-shadow:0 0 50px rgba(212,160,23,.35);
+    margin-bottom:6px;
+  }
+  .overlay .tag {
+    font-size:11px; letter-spacing:.6em; text-transform:uppercase;
+    color:rgba(232,227,208,.5); margin-bottom:34px;
+  }
+  .overlay p {
+    max-width:560px; font-size:14px; line-height:1.8;
+    color:rgba(232,227,208,.78); margin-bottom:14px;
+  }
+  .overlay .credit {
+    margin-top:24px; font-size:10px; letter-spacing:.32em;
+    color:rgba(232,227,208,.4); text-transform:uppercase;
+  }
+  .keys {
+    display:grid; grid-template-columns:repeat(2, auto); gap:6px 18px;
+    margin:24px 0 28px;
+    font-size:11px; letter-spacing:.15em; color:rgba(232,227,208,.6);
+  }
+  .keys b {
+    display:inline-block; min-width:54px;
+    border:1px solid rgba(212,160,23,.5);
+    color:#d4a017; padding:2px 6px; margin-right:10px;
+    font-weight:500; text-align:center;
+  }
+  .btn {
+    display:inline-block;
+    background:transparent;
+    color:#d4a017;
+    border:1px solid #d4a017;
+    padding:13px 36px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; letter-spacing:.32em; text-transform:uppercase;
+    cursor:pointer;
+    text-decoration:none;
+    transition:all .2s;
+  }
+  .btn:hover { background:#d4a017; color:#050811; box-shadow:0 0 30px rgba(212,160,23,.4); }
+  .btn + .btn { margin-left:14px; }
+
+  /* Newspaper-style end paper */
+  .end-paper {
+    max-width:640px;
+    width:100%;
+    background:#161510;
+    border:1px solid rgba(212,160,23,.35);
+    padding:24px 28px;
+    margin:14px 0 22px;
+    text-align:left;
+    max-height:60vh; overflow-y:auto;
+    box-shadow:0 12px 40px rgba(0,0,0,.7);
+    -webkit-overflow-scrolling:touch;
+  }
+  .end-kicker {
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; letter-spacing:.4em; color:#d4a017;
+    text-transform:uppercase;
+    border-bottom:2px double rgba(212,160,23,.5);
+    padding-bottom:6px; margin-bottom:14px;
+  }
+  .end-headline {
+    font-family:'Special Elite', monospace;
+    font-size:26px; line-height:1.2;
+    color:#e8e3d0;
+    margin:0 0 10px;
+  }
+  .end-byline {
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; letter-spacing:.18em;
+    color:rgba(232,227,208,.55);
+    text-transform:uppercase;
+    border-bottom:1px solid rgba(232,227,208,.15);
+    padding-bottom:14px; margin-bottom:14px;
+  }
+  .end-article { margin-bottom:14px; }
+  .art-p {
+    font-family:'Special Elite', monospace;
+    font-size:13px; line-height:1.65;
+    color:#e8e3d0;
+    margin-bottom:14px;
+  }
+  .art-p.missing { opacity:.32; }
+  .art-p .art-method {
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9px; letter-spacing:.32em;
+    color:#d4a017;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .art-p.missing .art-method { color:rgba(232,227,208,.4); }
+  .end-closing {
+    font-family:'Special Elite', monospace;
+    font-size:12px; line-height:1.6;
+    color:rgba(232,227,208,.7);
+    border-top:1px solid rgba(232,227,208,.15);
+    padding-top:12px; margin:0;
+    font-style:italic;
+  }
+  .end-stats {
+    text-align:center;
+    font-size:10px; letter-spacing:.32em;
+    color:rgba(232,227,208,.45);
+    text-transform:uppercase;
+    margin:0 0 18px;
+  }
+  .end-stats b { color:#d4a017; }
+
+  /* Boss UI */
+  .boss-hp-wrap {
+    position:absolute; top:50px; left:50%;
+    transform:translateX(-50%);
+    z-index:5;
+    display:flex; flex-direction:column; align-items:center;
+    pointer-events:none;
+    opacity:0; transition:opacity .4s;
+  }
+  .boss-hp-wrap.show { opacity:1; }
+  .boss-hp-label {
+    font-size:9px; letter-spacing:.42em;
+    color:#c0392b; text-transform:uppercase;
+    margin-bottom:5px;
+    text-shadow:0 0 8px rgba(192,57,43,.5);
+  }
+  .boss-hp-bar {
+    display:flex; gap:2px;
+    background:rgba(5,8,17,.85);
+    border:1px solid #c0392b;
+    padding:3px;
+    box-shadow:0 0 14px rgba(192,57,43,.4);
+  }
+  .boss-hp-bar i {
+    width:14px; height:14px;
+    display:block;
+    background:#c0392b;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);
+    transition:background .15s, opacity .25s;
+  }
+  .boss-hp-bar i.empty {
+    background:rgba(192,57,43,.12);
+    box-shadow:inset 0 0 0 1px rgba(192,57,43,.3);
+  }
+  .boss-hp-bar i.fill { animation:bhpFill .25s ease-out; }
+  @keyframes bhpFill { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+
+  /* Boss intro overlay (Mega Man-style) */
+  .boss-intro {
+    position:absolute; inset:0; z-index:8;
+    background:rgba(5,8,17,.78);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    pointer-events:none;
+    opacity:0; transition:opacity .35s;
+  }
+  .boss-intro.show { opacity:1; pointer-events:auto; cursor:pointer; }
+  .boss-quote {
+    background:rgba(5,8,17,.96);
+    border:1px solid #c0392b;
+    padding:20px 28px;
+    max-width:520px; text-align:center;
+    box-shadow:0 0 30px rgba(192,57,43,.35), 0 12px 40px rgba(0,0,0,.7);
+  }
+  .boss-quote .who {
+    display:block;
+    color:#c0392b;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; letter-spacing:.36em;
+    margin-bottom:12px; text-transform:uppercase;
+  }
+  .boss-quote .text {
+    font-family:'Special Elite', monospace;
+    font-size:16px; line-height:1.55; color:#e8e3d0;
+  }
+  .boss-quote .more {
+    margin-top:14px; font-size:9px; letter-spacing:.32em;
+    color:rgba(232,227,208,.45);
+  }
+
+  .boss-name-card {
+    position:absolute; left:50%; bottom:54px;
+    transform:translateX(-50%);
+    z-index:9;
+    text-align:center;
+    pointer-events:none;
+  }
+  .boss-name-big {
+    font-family:'Special Elite', monospace;
+    font-size:60px; letter-spacing:.05em;
+    color:#c0392b;
+    text-shadow:0 0 30px rgba(192,57,43,.6), 0 0 4px rgba(0,0,0,.95);
+    white-space:nowrap;
+    animation:bossNameSlide .55s cubic-bezier(.2,.8,.2,1);
+  }
+  .boss-name-small {
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px; letter-spacing:.55em;
+    color:rgba(232,227,208,.7);
+    margin-top:4px;
+  }
+  @keyframes bossNameSlide {
+    from { opacity:0; transform:translateX(-50%) translateY(20px); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+  }
+
+  .boss-go {
+    position:absolute; left:50%; top:46%;
+    transform:translate(-50%,-50%);
+    z-index:10;
+    font-family:'Special Elite', monospace;
+    font-size:96px; color:#d4a017;
+    text-shadow:0 0 50px rgba(212,160,23,.85), 0 0 6px rgba(0,0,0,.9);
+    letter-spacing:.06em;
+    pointer-events:none;
+    animation:bossGoFlash .14s steps(1,end) 8;
+  }
+  @keyframes bossGoFlash { 50% { opacity:0; } }
+
+  .boss-shout {
+    position:absolute; left:50%; top:36%;
+    transform:translate(-50%,-50%);
+    z-index:10;
+    font-family:'Special Elite', monospace;
+    font-size:54px; line-height:1.05;
+    color:#c0392b;
+    text-shadow:0 0 35px rgba(192,57,43,.7), 0 0 6px rgba(0,0,0,.95);
+    letter-spacing:.04em;
+    text-align:center;
+    pointer-events:none;
+    max-width:88%;
+    animation:bossShoutShake .55s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes bossShoutShake {
+    0%   { opacity:0; transform:translate(-50%,-50%) scale(.7); }
+    40%  { opacity:1; transform:translate(-50%,-50%) scale(1.08); }
+    55%  { transform:translate(-52%,-50%) scale(1); }
+    70%  { transform:translate(-48%,-50%) scale(1); }
+    100% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  }
+
+  .toast.danger {
+    border-color:#c0392b; color:#c0392b;
+    box-shadow:0 0 24px rgba(192,57,43,.35);
+  }
+
+  .hidden { display:none !important; }
+
+  .blink { animation:blink 1.2s steps(2,start) infinite; }
+  @keyframes blink { to { opacity:.2; } }
+
+  /* Touch controls — sibling of #stage, layouts switch on orientation */
+  .touch-ctrl {
+    display:none;
+    pointer-events:none;
+  }
+  .tc-pad, .tc-actions {
+    display:flex; gap:8px; align-items:center;
+    pointer-events:auto;
+  }
+  .tc-btn {
+    border:1px solid rgba(212,160,23,.5);
+    background:rgba(5,8,17,.7);
+    color:#d4a017;
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    border-radius:10px;
+    backdrop-filter:blur(4px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition:transform .06s, background .08s;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  .tc-btn:active, .tc-btn.active {
+    background:rgba(212,160,23,.6);
+    color:#050811;
+    transform:scale(.92);
+  }
+  .tc-btn .lbl { font-size:9px; letter-spacing:.06em; opacity:.7; line-height:1; margin-top:2px; }
+  .tc-btn .ic  { line-height:1; }
+  .tc-jump { background:rgba(212,160,23,.22); }
+
+  /* Landscape mobile / narrow / coarse — compact overlay at bottom of stage */
+  @media (hover: none) and (pointer: coarse) and (orientation: landscape),
+         (max-height: 500px) and (orientation: landscape) {
+    .touch-ctrl {
+      display:flex;
+      position:absolute; left:0; right:0; bottom:0;
+      justify-content:space-between; align-items:flex-end;
+      padding:8px 10px;
+      z-index:7;
+    }
+    .tc-btn { width:44px; height:44px; font-size:14px; }
+    .tc-btn .ic { font-size:14px; }
+    .tc-actions .tc-e { width:54px; }
+    .controls-hint { display:none; }
+    .hud { font-size:9px; gap:4px; padding:10px; }
+    .chip, .ability { padding:5px 7px; font-size:9px; }
+    .hearts span { font-size:11px; }
+  }
+
+  /* Portrait phone — game on top, controls in spacious bottom area */
+  @media (orientation: portrait) and (pointer: coarse), (orientation: portrait) and (max-width: 720px) {
+    body { display:block; }
+    #shell {
+      display:flex; flex-direction:column;
+      align-items:stretch; justify-content:flex-start;
+      height:100dvh; width:100vw;
+    }
+    #stage {
+      width:100vw; max-width:none;
+      aspect-ratio:auto;
+      height:60dvh;
+      flex:0 0 60dvh;
+      box-shadow:none;
+      border-bottom:1px solid rgba(212,160,23,.25);
+    }
+    #stage canvas {
+      image-rendering:auto;          /* smooth scaling — pixel art não fica retangular bizarro quando estica */
+    }
+    /* Title and end screens fill whole viewport on portrait, not just stage */
+    .overlay {
+      position:fixed; inset:0;
+      z-index:100;
+      padding:20px;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    .overlay h1 { font-size:38px; }
+    .end-paper {
+      padding:16px 18px;
+      max-height:60dvh;
+      margin:10px 0 16px;
+    }
+    .end-headline { font-size:20px; }
+    .art-p { font-size:12px; line-height:1.55; margin-bottom:12px; }
+    .art-p .art-method { font-size:8px; letter-spacing:.28em; }
+    .end-byline { font-size:9px; }
+    .end-stats { font-size:9px; }
+    .btn { padding:10px 22px; font-size:11px; letter-spacing:.22em; }
+    .btn + .btn { margin-left:8px; margin-top:8px; }
+    .touch-ctrl {
+      display:flex;
+      flex:1 1 auto;
+      width:100vw;
+      background:linear-gradient(180deg, rgba(5,8,17,1) 0%, rgba(8,12,28,1) 100%);
+      padding:18px 16px 22px;
+      align-items:center; justify-content:space-between;
+      gap:16px;
+    }
+    /* Left side: only horizontal arrows */
+    .tc-pad { gap:10px; }
+    .tc-pad .tc-btn { width:74px; height:74px; font-size:24px; }
+    /* Right side: jump + actions stacked in 2x2 */
+    .tc-actions {
+      display:grid;
+      grid-template-columns:repeat(2, auto);
+      grid-auto-rows:auto;
+      gap:10px;
+    }
+    .tc-actions .tc-btn { width:74px; height:62px; font-size:18px; }
+    .tc-actions .tc-jump { background:rgba(212,160,23,.28); border-color:#d4a017; }
+    .tc-actions .tc-e {
+      grid-column:1 / span 2;
+      width:auto; height:50px;
+      font-size:11px; letter-spacing:.18em;
+    }
+    /* HUD compact */
+    .hud { font-size:9px; gap:4px; padding:10px; }
+    .chip, .ability { padding:5px 7px; font-size:9px; }
+    .ability .key { font-size:8px; }
+    .hearts { padding:4px 7px; }
+    .hearts span { font-size:11px; }
+    .room-name { font-size:26px; }
+    .room-name .sub { font-size:8px; }
+    .controls-hint { display:none; }
+    .dialog { padding:12px 16px; max-width:94%; }
+    .dialog .text { font-size:13px; }
+  }
+  @media (max-width: 480px) {
+    .overlay h1 { font-size:42px; }
+    .overlay p { font-size:12px; }
+    .keys { font-size:10px; gap:4px 12px; }
+    .btn { padding:11px 24px; font-size:11px; letter-spacing:.22em; }
+  }
+  /* Abilities — locked state by default, unlocked = amber */
+  .ability {
+    position:relative;
+    border:1px dashed rgba(232,227,208,.18);
+    color:rgba(232,227,208,.32);
+    background:rgba(5,8,17,.5);
+    padding-right:22px;
+  }
+  .ability::after {
+    content:'🔒';
+    position:absolute;
+    top:50%; right:6px;
+    transform:translateY(-50%);
+    font-size:10px;
+    opacity:.6;
+  }
+  .ability.on {
+    border:1px solid rgba(212,160,23,.6);
+    color:#d4a017;
+    box-shadow:0 0 12px rgba(212,160,23,.18) inset;
+    padding-right:11px;
+  }
+  .ability.on::after { display:none; }
+
+  /* Touch buttons for Z and X — show locked state too */
+  .tc-btn.locked {
+    opacity:.45;
+    border-color:rgba(232,227,208,.18);
+    color:rgba(232,227,208,.4);
+    background:rgba(5,8,17,.5);
+    position:relative;
+  }
+  .tc-btn.locked::after {
+    content:'🔒';
+    position:absolute; top:3px; right:3px;
+    font-size:9px;
+    opacity:.7;
+  }
+</style>
+</head>
+<body>
+
+<div id="shell">
+<div id="stage">
+  <canvas id="game" width="960" height="544"></canvas>
+  <div class="scan"></div>
+  <div class="grain"></div>
+
+  <div class="hud hidden" id="hud">
+    <div class="hud-left">
+      <div class="chip"><strong id="roomLabel">REDAÇÃO</strong></div>
+      <div class="chip">PISTAS <strong id="clueCount">0/10</strong></div>
+      <div class="chip hearts" id="hearts"></div>
+    </div>
+    <div class="hud-right">
+      <div class="ability" id="abCam"><span class="key">Z</span>CÂMERA</div>
+      <div class="ability" id="abRec"><span class="key">X</span>GRAVADOR</div>
+      <div class="ability" id="abPed"><span class="key">C</span>PEDIDO</div>
+      <div class="ability" id="abChief"><span class="key">V</span>EDITORA</div>
+      <button class="chip mute-btn" id="muteBtn" aria-label="alternar som" title="som on/off">🔊</button>
+    </div>
+  </div>
+
+  <div class="room-name" id="roomName"></div>
+  <div class="toast" id="toast"></div>
+
+  <div class="dialog hidden" id="dialog">
+    <div class="who" id="dlgWho">EDITOR</div>
+    <div class="text" id="dlgText">…</div>
+    <div class="more">[ESPAÇO / TOQUE] CONTINUAR</div>
+  </div>
+
+  <!-- BOSS UI -->
+  <div class="boss-hp-wrap" id="bossHp">
+    <div class="boss-hp-label" id="bossHpLabel">CARLÃO DO PASTEL</div>
+    <div class="boss-hp-bar" id="bossHpBar"></div>
+  </div>
+  <div class="boss-intro hidden" id="bossIntro">
+    <div class="boss-quote">
+      <span class="who" id="bossQuoteWho">CARLÃO DO PASTEL · DEPUTADO FEDERAL</span>
+      <span class="text" id="bossQuoteText">…</span>
+      <span class="more">[ESPAÇO / TOQUE] CONTINUAR</span>
+    </div>
+  </div>
+  <div class="boss-name-card hidden" id="bossNameCard">
+    <div class="boss-name-big" id="bossNameBig">CARLÃO DO PASTEL</div>
+    <div class="boss-name-small" id="bossNameSmall">DEPUTADO · CASO RP-9</div>
+  </div>
+  <div class="boss-shout hidden" id="bossShout"></div>
+  <div class="boss-go hidden" id="bossGo">GO!</div>
+
+  <!-- TITLE -->
+  <div class="overlay" id="titleScreen">
+    <h1>Sinais Enterrados</h1>
+    <div class="tag">um jogo de investigação · jornalzão do cidadão</div>
+    <p>Você é um jornalista investigativo. Chegou uma dica de pauta por meio de um e-mail criptografado. A fonte diz que o gabinete do deputado <b style="color:#d4a017">Carlão do Pastel</b> desvia recursos de emendas parlamentares por meio de aliados e empresas de fachada. Você vai usar ferramentas de jornalista — Lei de Acesso à Informação, pesquisa em acervos públicos, portal de transparência e relatórios — para descobrir o que aconteceu e tentar publicar a matéria. Lobistas e aliados do deputado vão tentar te atrapalhar.</p>
+    <div class="keys">
+      <span><b>← →</b> mover</span>
+      <span><b>↑ / W</b> pular</span>
+      <span><b>E</b> interagir</span>
+      <span><b>Z X C</b> habilidades</span>
+    </div>
+    <button class="btn" id="startBtn">Começar a apuração</button>
+    <a href="../index.html" style="margin-top:18px;font-size:10px;letter-spacing:.32em;color:rgba(232,227,208,.4);text-decoration:none;text-transform:uppercase;border-bottom:1px solid rgba(232,227,208,.15);padding-bottom:2px">← voltar ao portfólio</a>
+    <div class="credit">por Luiz Fernando Toledo · luizftoledo.github.io · caso fictício</div>
+  </div>
+
+  <!-- FIRED (game over) -->
+  <div class="overlay hidden" id="firedScreen">
+    <div class="tag">terça-feira · 14:32</div>
+    <div class="end-paper">
+      <div class="end-kicker" style="border-bottom-color:rgba(192,57,43,.55); color:#c0392b">COMUNICADO INTERNO · DESLIGAMENTO</div>
+      <h2 class="end-headline" style="color:#e8e3d0">"Toledo, dá um passo pra trás dessa pauta."</h2>
+      <p class="art-p" style="margin-top:18px">
+        <span class="art-method">CHEFE DE REDAÇÃO</span>
+        O deputado Carlão do Pastel ligou pra direção do jornal pessoalmente. Falou em ações, falou em sócios da empresa-mãe. Pediu sua cabeça.
+      </p>
+      <p class="art-p">
+        <span class="art-method">RH</span>
+        A Jornalzão do Cidadão lamenta informar que seu vínculo está rescindido a partir desta data. As pistas que você apurou ficaram no notebook que você devolveu na portaria.
+      </p>
+      <p class="end-closing" style="border-top-color:rgba(192,57,43,.45)">
+        Os lobistas chegaram primeiro. A matéria não saiu desta vez.
+      </p>
+    </div>
+    <div>
+      <button class="btn" id="firedRetry" style="border-color:#c0392b; color:#c0392b">Tentar de novo</button>
+    </div>
+    <div class="credit">a apuração não termina na primeira derrota</div>
+  </div>
+
+  <!-- END -->
+  <div class="overlay hidden" id="endScreen">
+    <div class="tag">edição extra · matéria publicada</div>
+    <div class="end-stats" id="endStats"></div>
+    <div class="end-paper">
+      <div class="end-kicker">EXCLUSIVO · JORNALZÃO DO CIDADÃO</div>
+      <h2 class="end-headline" id="endHead">Emendas de R$ 4 mi de Carlão do Pastel pararam em ONG presidida por ex-motorista do gabinete</h2>
+      <div class="end-byline" id="endByline">Por Luiz Toledo · Jornalzão do Cidadão · com documentos, fontes e auditoria preliminar do TFA</div>
+      <div class="end-article" id="cluesRecap"></div>
+      <p class="end-closing">A reportagem procurou o gabinete do deputado Carlão do Pastel por mensagem, e-mail e telefone, em três oportunidades, e não obteve retorno até o fechamento desta edição. O TFA, o Instituto Plenitude e a Pastel & Cia foram igualmente procurados. O espaço segue aberto para manifestação.</p>
+    </div>
+    <div>
+      <a class="btn" id="portfolioBtn" href="https://luizftoledo.github.io" target="_blank" rel="noopener">Ver o portfólio →</a>
+      <button class="btn" id="replayBtn">Jogar de novo</button>
+    </div>
+    <div class="credit">obrigado por apurar com a gente</div>
+  </div>
+</div>
+
+<div class="touch-ctrl" id="touchCtrl">
+  <div class="tc-pad">
+    <button class="tc-btn tc-left"  data-key="arrowleft"  aria-label="esquerda"><span class="ic">◄</span></button>
+    <button class="tc-btn tc-right" data-key="arrowright" aria-label="direita"><span class="ic">►</span></button>
+  </div>
+  <div class="tc-actions">
+    <button class="tc-btn tc-z locked" data-key="z"   aria-label="câmera (bloqueada)"><span class="ic">📷</span><span class="lbl">Z</span></button>
+    <button class="tc-btn tc-x locked" data-key="x"   aria-label="gravador (bloqueado)"><span class="ic">🎙</span><span class="lbl">X</span></button>
+    <button class="tc-btn tc-c locked" data-key="c"   aria-label="pedido formal (bloqueado)"><span class="ic">✉</span><span class="lbl">C</span></button>
+    <button class="tc-btn tc-v locked" data-key="v"   aria-label="editora-chefe (bloqueado)"><span class="ic">📞</span><span class="lbl">V</span></button>
+    <button class="tc-btn tc-jump" data-key="arrowup"  aria-label="pular"><span class="ic">▲</span><span class="lbl">PULO</span></button>
+    <button class="tc-btn tc-e"    data-key="e"        aria-label="interagir"><span class="lbl">E · INTERAGIR</span></button>
+  </div>
+</div>
+</div><!-- /shell -->
+
+<script>
+/* ============================================================
+   SINAIS ENTERRADOS — engine
+   ============================================================ */
+
+const TILE = 32, COLS = 30, ROWS = 17;
+const W = TILE*COLS, H = TILE*ROWS;
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+/* ---------- AUDIO (procedural SFX, no assets) ---------- */
+let audioCtx = null;
+let soundOn = true;
+try { soundOn = localStorage.getItem('se-mute') !== '1'; } catch(e){}
+
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  audioCtx = new Ctx();
+  return audioCtx;
+}
+// iOS/Safari/Chrome mobile: AudioContext starts suspended.
+// Call this synchronously inside any user gesture (click/touch/keydown).
+function unlockAudio() {
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
+    ctx.resume();
+  }
+  if (!unlockAudio._done) {
+    // Silent buffer to fully unlock on iOS
+    try {
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch (e) {}
+    unlockAudio._done = true;
+  }
+}
+function tone(freq, duration, type='square', vol=0.06, slideTo=null) {
+  if (!soundOn) return;
+  const ctx = ensureAudio(); if (!ctx) return;
+  if (ctx.state !== 'running') ctx.resume();
+  const t = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t + duration);
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + duration + 0.02);
+}
+function noise(duration=0.1, vol=0.05) {
+  if (!soundOn) return;
+  const ctx = ensureAudio(); if (!ctx) return;
+  const sr = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, sr * duration, sr);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const gain = ctx.createGain(); gain.gain.value = vol;
+  src.connect(gain).connect(ctx.destination);
+  src.start();
+}
+const SFX = {
+  jump:    () => tone(440, 0.08, 'square', 0.04, 660),
+  land:    () => tone(110, 0.05, 'sine',   0.03, 80),
+  clue:    () => { tone(660, 0.08, 'sine', 0.05); setTimeout(()=>tone(880, 0.14, 'sine', 0.06), 70); },
+  ability: () => { tone(523, 0.09, 'triangle', 0.05); setTimeout(()=>tone(659, 0.09, 'triangle', 0.05), 80); setTimeout(()=>tone(784, 0.18, 'triangle', 0.06), 160); },
+  hit:     () => { tone(220, 0.18, 'sawtooth', 0.06, 110); noise(0.08, 0.04); },
+  flash:   () => { noise(0.12, 0.06); tone(1200, 0.05, 'square', 0.05); },
+  rec:     () => { tone(330, 0.18, 'sine', 0.05, 660); tone(440, 0.18, 'sine', 0.04, 880); },
+  enemyDown:() => { tone(440, 0.08, 'square', 0.05); setTimeout(()=>tone(220, 0.16, 'sawtooth', 0.05, 110), 60); },
+  door:    () => tone(180, 0.18, 'sine', 0.04, 90),
+  dialog:  () => tone(700, 0.02, 'square', 0.03),
+  gameOver:() => {
+    tone(440, 0.22, 'sawtooth', 0.06, 330);
+    setTimeout(()=>tone(330, 0.28, 'sawtooth', 0.06, 220), 220);
+    setTimeout(()=>tone(220, 0.55, 'sawtooth', 0.05, 110), 500);
+  },
+  win:     () => {
+    [0,120,240,360,520].forEach((d,i)=>{
+      setTimeout(()=>tone([523,659,784,1047,1319][i], i===4?0.45:0.1, 'triangle', 0.06), d);
+    });
+  },
+  ped:     () => {
+    tone(880, 0.06, 'square', 0.045);
+    setTimeout(()=>tone(660, 0.10, 'triangle', 0.05, 520), 50);
+    setTimeout(()=>noise(0.04, 0.025), 100);
+  },
+  chief:   () => {
+    [0,90,180].forEach((d,i)=>{
+      setTimeout(()=>tone([784,988,1175][i], 0.16, 'triangle', 0.06), d);
+    });
+  },
+  bossHit: () => {
+    tone(160, 0.16, 'sawtooth', 0.07, 80);
+    noise(0.10, 0.05);
+  },
+  bossDie: () => {
+    [0,180,360,540,800].forEach((d,i)=>{
+      setTimeout(()=>tone([330,247,196,165,110][i], i===4?0.7:0.18, 'sawtooth', 0.07, [220,165,130,110,55][i]), d);
+    });
+    setTimeout(()=>noise(0.4, 0.06), 600);
+  },
+  processo:() => {
+    tone(180, 0.10, 'sawtooth', 0.04, 90);
+    setTimeout(()=>tone(280, 0.06, 'square', 0.03), 60);
+  },
+  bossIntro:() => {
+    [0,200,400,650].forEach((d,i)=>{
+      setTimeout(()=>tone([110,138,165,82][i], i===3?0.6:0.12, 'sawtooth', 0.06), d);
+    });
+  },
+  bossGo:  () => {
+    tone(880, 0.06, 'square', 0.07);
+    setTimeout(()=>tone(1175, 0.18, 'triangle', 0.07), 80);
+  },
+  bossJump:() => {
+    tone(220, 0.10, 'square', 0.05, 440);
+    setTimeout(()=>noise(0.04, 0.025), 80);
+  },
+  bossLand:() => {
+    tone(80, 0.18, 'sawtooth', 0.08, 40);
+    noise(0.16, 0.06);
+  },
+  discurso:() => {
+    tone(330, 0.18, 'sawtooth', 0.06, 247);
+    setTimeout(()=>tone(247, 0.18, 'square', 0.05, 185), 60);
+    setTimeout(()=>tone(165, 0.22, 'sawtooth', 0.05, 110), 140);
+  },
+};
+function setMute(m) {
+  soundOn = !m;
+  try { localStorage.setItem('se-mute', m ? '1' : '0'); } catch(e){}
+  const btn = document.getElementById('muteBtn');
+  if (btn) {
+    btn.textContent = soundOn ? '🔊' : '🔈';
+    btn.classList.toggle('muted', !soundOn);
+  }
+  if (!soundOn) stopBossMusic();
+}
+
+/* ---------- BOSS MUSIC (procedural suspense/adventure loop) ---------- */
+let bossMusic = null;
+function startBossMusic() {
+  if (!soundOn) return;
+  if (bossMusic) return;
+  const ctx = ensureAudio(); if (!ctx) return;
+  // 8-step ostinato in D minor — pulsing bass + dissonant stabs + melodic adventure line
+  let step = 0;
+  const pattern = [
+    { bass: 73.4,  stab: null,  lead: 587.3 }, // D2,                 D5
+    { bass: 73.4,  stab: null,  lead: null  },
+    { bass: 73.4,  stab: 277.2, lead: 698.5 }, // C#5 stab,            F5
+    { bass: 87.3,  stab: null,  lead: 659.3 }, // F2,                  E5
+    { bass: 73.4,  stab: null,  lead: 587.3 },
+    { bass: 73.4,  stab: 311.1, lead: null  }, // D#5 stab
+    { bass: 98.0,  stab: null,  lead: 523.3 }, // G2,                  C5
+    { bass: 65.4,  stab: 207.7, lead: 493.9 }, // C2 + Ab4,            B4
+  ];
+  const stepMs = 360;
+  bossMusic = setInterval(() => {
+    if (!soundOn) { stopBossMusic(); return; }
+    const s = pattern[step % pattern.length];
+    // pulsing bass — heartbeat under tension
+    tone(s.bass, 0.32, 'triangle', 0.05, s.bass * 0.94);
+    // dissonant stab — suspense
+    if (s.stab) {
+      setTimeout(()=>tone(s.stab, 0.22, 'sawtooth', 0.035, s.stab * 0.85), 60);
+    }
+    // melodic lead — adventure motif
+    if (s.lead) {
+      setTimeout(()=>tone(s.lead, 0.18, 'triangle', 0.028, s.lead * 1.02), 120);
+    }
+    // distant rumble on beat 1
+    if (step % pattern.length === 0) {
+      setTimeout(()=>noise(0.08, 0.018), 180);
+    }
+    step++;
+  }, stepMs);
+}
+function stopBossMusic() {
+  if (bossMusic) { clearInterval(bossMusic); bossMusic = null; }
+}
+
+/* ---------- INPUT ---------- */
+const keys = {};
+const pressed = {}; // single-frame
+function inputDown(k) {
+  if (!keys[k]) pressed[k] = true;
+  keys[k] = true;
+}
+function inputUp(k) { keys[k] = false; }
+
+addEventListener('keydown', e => {
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  inputDown(e.key.toLowerCase());
+});
+addEventListener('keyup', e => { inputUp(e.key.toLowerCase()); });
+
+// Touch controls — wire each button to inputDown/Up using its data-key
+document.querySelectorAll('.tc-btn').forEach(btn => {
+  const k = btn.dataset.key;
+  const press = (e) => {
+    e.preventDefault();
+    btn.classList.add('active');
+    inputDown(k);
+    // jump key is also tracked via space/arrowup by game logic
+  };
+  const release = (e) => {
+    if (e) e.preventDefault();
+    btn.classList.remove('active');
+    inputUp(k);
+  };
+  btn.addEventListener('touchstart', press, { passive:false });
+  btn.addEventListener('touchend', release, { passive:false });
+  btn.addEventListener('touchcancel', release, { passive:false });
+  btn.addEventListener('mousedown', press);
+  btn.addEventListener('mouseup', release);
+  btn.addEventListener('mouseleave', release);
+});
+
+// Tapping the canvas/dialog advances dialog (mobile-friendly)
+document.getElementById('game').addEventListener('touchstart', (e) => {
+  if (game.state === 'dialog') {
+    e.preventDefault();
+    advanceDialog();
+  } else if (game.state === 'bossIntro' && game.bossIntro?.phase === 1) {
+    e.preventDefault();
+    advanceBossIntro();
+  }
+}, { passive:false });
+document.getElementById('dialog').addEventListener('click', () => {
+  if (game.state === 'dialog') advanceDialog();
+});
+document.getElementById('bossIntro').addEventListener('click', () => {
+  if (game.state === 'bossIntro' && game.bossIntro?.phase === 1) advanceBossIntro();
+});
+
+/* ---------- ROOMS ----------
+   Tile legend:
+     . = empty       # = wall (concrete)        = = floor (top-only? we use solid)
+     | = bookshelf (decor solid)                ~ = water/static (decor solid)
+     ^ = spike/hazard (resets player)
+     L = locked door (needs ability — entity defines key)
+     d = door (entity defines target)
+     N = NPC slot (entity defines)              C = clue slot (entity)
+     A = ability pickup slot (entity)
+     P = spawn (only meaningful for first room)
+*/
+const ROOMS = {
+
+  /* ---------- 1 · REDAÇÃO ---------- */
+  redacao: {
+    title: 'REDAÇÃO',
+    sub: 'jornalzão do cidadão · 04:12',
+    palette: { wall:'#1a2030', accent:'#3a4a6e', floor:'#262e44' },
+    bg: drawNewsroomBG,
+    map: [
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '......####....................',
+      '..............................',
+      '##############################',
+      '##############################',
+      '##############################',
+    ],
+    entities: [
+      { type:'spawn', x:3, y:13 },
+      { type:'desk', x:5, y:13 }, { type:'desk', x:12, y:13 }, { type:'desk', x:19, y:13 },
+      { type:'npc', x:5, y:13, name:'EDITOR', dialog:[
+        'Toledo. Caiu um áudio anônimo na caixa segura.',
+        'A fonte cita um "Instituto Plenitude". CNPJ aberto há seis meses.',
+        'A pessoa diz que esse CNPJ recebeu emenda do Carlão do Pastel.',
+        'Vai pro Arquivo Público (→). Puxa o empenho, confere o estatuto, ver se a história faz algum sentido.',
+        'E olho aberto: aliados do deputado e lobistas tentam empurrar repórter pra fora antes da gente ler tudo.',
+      ]},
+      { type:'clue', x:7, y:11, ord:1,
+        method:'CAIXA SEGURA · ÁUDIO ANÔNIMO',
+        text:'Áudio anônimo de 41 segundos. Voz de mulher: "olha as emendas pro Plenitude. ninguém aqui dentro entende o CNPJ."',
+        article:'A reportagem teve acesso a um áudio anônimo recebido pelo canal seguro da Jornalzão do Cidadão. Uma voz feminina não identificada cita o Instituto Plenitude e pede que se examine o cadastro da entidade.' },
+      { type:'clue', x:24, y:13, ord:2,
+        method:'PAUTA · BACKGROUND',
+        text:'Mural de pauta: três sobrinhos do deputado contratados como assessores parlamentares em 2022. Festas em iates registradas em redes sociais.',
+        article:'Levantamento da reportagem mostra que o gabinete de Carlão tem três familiares contratados como assessores e registros públicos de viagens em iates de doadores de campanha. Os fatos, isoladamente, não configuram irregularidade, mas compõem o pano de fundo do caso.' },
+      { type:'door', x:29, y:13, dir:'right', to:'arquivo', spawnAt:{ x:1, y:13 } },
+    ]
+  },
+
+  /* ---------- 2 · ARQUIVO ---------- */
+  arquivo: {
+    title: 'ARQUIVO PÚBLICO',
+    sub: 'pasta 19-B · processos selados',
+    palette: { wall:'#1c1815', accent:'#3d2f1f', floor:'#2a221a' },
+    bg: drawArchiveBG,
+    map: [
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '.........####.................',
+      '..............................',
+      '..............####............',
+      '..............................',
+      '..........####................',
+      '..............................',
+      '..............####............',
+      '..............................',
+      '##############################',
+      '##############################',
+      '##############################',
+    ],
+    entities: [
+      { type:'door', x:0,  y:13, dir:'left',  to:'redacao', spawnAt:{ x:28, y:13 } },
+      { type:'door', x:29, y:13, dir:'right', to:'forum',   spawnAt:{ x:1,  y:13 } },
+      { type:'shelf', x:2, y:13 }, { type:'shelf', x:25, y:13 },
+      { type:'enemy', x:22, y:13, range:3, kind:'lobby', speed:0.55, name:'LOBISTA' },
+      { type:'clue', x:4,  y:13, ord:3,
+        method:'PORTAL DA TRANSPARÊNCIA · PRINT',
+        text:'Empenho 0192/2023: R$ 4 milhões destinados ao Instituto Plenitude. Convênio publicado no Diário Oficial 4 dias após o aviso. Documentação anexa ao processo: ausente.',
+        article:'A consulta ao Portal da Transparência localizou o empenho 0192/2023, de R$ 4 milhões para o Instituto Plenitude. O convênio foi assinado quatro dias após a publicação do aviso — e a documentação que deveria instruir o processo não consta no sistema.' },
+      { type:'clue', x:15, y:7, ord:4,
+        method:'JUNTA COMERCIAL · CONSULTA',
+        text:'Estatuto registrado em 2022 lista José Aparecido (CPF parcialmente legível) como presidente. Histórico profissional: motorista do gabinete entre 2015 e 2019. Não tem registro anterior no terceiro setor.',
+        article:'Documentos da Junta Comercial apontam como presidente do Instituto Plenitude José Aparecido, ex-motorista do gabinete do parlamentar entre 2015 e 2019, sem registros anteriores em organizações do terceiro setor.' },
+      { type:'clue', x:11, y:9, ord:5,
+        method:'PEDIDO LAI · CGU',
+        text:'Resposta ao pedido LAI veio em 47 dias: notas fiscais da Plenitude. Sete delas em favor da Pastel & Cia, em 2023. Endereço da Pastel & Cia coincide com o do escritório político do parlamentar.',
+        article:'Por meio de pedido de Lei de Acesso à Informação à CGU, a reportagem obteve notas fiscais que apontam sete pagamentos da Plenitude à empresa Pastel & Cia em 2023. O endereço da empresa coincide com o do escritório eleitoral do parlamentar.' },
+      { type:'ability', x:10, y:5, key:'cam', name:'CÂMERA', text:'Câmera adquirida. [Z] flash — registra prova e cega lobistas.' },
+    ]
+  },
+
+  /* ---------- 3 · TFA ---------- */
+  forum: {
+    title: 'TFA',
+    sub: 'tribunal federal de auditoria · sala de auditoria de emendas',
+    palette: { wall:'#15171f', accent:'#2a2e3d', floor:'#1f2330' },
+    bg: drawCourthouseBG,
+    map: [
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............####............',
+      '..............................',
+      '..........####................',
+      '..............................',
+      '..............####............',
+      '..............................',
+      '##############################',
+      '##############################',
+      '##############################',
+    ],
+    entities: [
+      { type:'door', x:0,  y:13, dir:'left',  to:'arquivo', spawnAt:{ x:28, y:13 } },
+      { type:'door', x:29, y:13, dir:'right', to:'campo',   spawnAt:{ x:1,  y:13 }, locked:'guard' },
+      { type:'guard', x:26, y:13, name:'SEGURANÇA', dialog:[
+        '— "Acesso restrito. Sem fotografar documentos."',
+        '(Use [Z] para o flash. Auditores piscam por uns segundos.)',
+      ]},
+      { type:'enemy', x:9,  y:13, range:5, kind:'lobby', speed:0.7, name:'LOBISTA' },
+      { type:'enemy', x:18, y:13, range:3, kind:'lobby', speed:0.85, name:'ASSESSOR' },
+      { type:'clue', x:5,  y:13, ord:6,
+        method:'TFA · AUDITORIA PRELIMINAR',
+        text:'Pasta da Auditoria 14/2024 lista o repasse à Plenitude entre "casos de atenção". Análise suspensa em 12/03 após recurso apresentado pela própria entidade auditada.',
+        article:'A Auditoria Preliminar 14/2024 do Tribunal Federal de Auditoria (TFA) classificou o repasse à Plenitude como "caso de atenção". A análise foi suspensa após recurso apresentado pela própria entidade auditada.' },
+      { type:'clue', x:11, y:9, ord:7,
+        method:'TFA · ACÓRDÃO PROVISÓRIO',
+        text:'Decisão preliminar fala em "indícios não conclusivos de desvio de finalidade". Sem julgamento de mérito agendado até o fechamento desta edição.',
+        article:'O acórdão provisório do TFA fala em "indícios não conclusivos de desvio de finalidade". Não há, até agora, julgamento de mérito agendado.' },
+      { type:'clue', x:20, y:13, ord:8,
+        method:'MEMO INTERNO · OFF THE RECORD',
+        text:'Memo de servidor do TFA registra três trocas na relatoria. A designação atual aparece em fotos públicas em jantar de campanha do parlamentar em 2022.',
+        article:'Memorando interno da equipe do TFA, obtido pela reportagem, indica três trocas sucessivas na relatoria do caso. Registros públicos mostram que o relator atual participou de jantar de campanha do parlamentar em 2022.' },
+      { type:'ability', x:15, y:7, key:'rec', name:'GRAVADOR', text:'Gravador adquirido. [X] dispara ondas sonoras — expõe lobistas, e a fonte só fala com ele ligado.' },
+    ]
+  },
+
+  /* ---------- 4 · CAMPO ---------- */
+  campo: {
+    title: 'CAMPO',
+    sub: 'estrada vicinal · encontro com a fonte',
+    palette: { wall:'#0f1a14', accent:'#1f3527', floor:'#16241b' },
+    bg: drawFieldBG,
+    map: [
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '##############################',
+      '##############################',
+      '##############################',
+    ],
+    entities: [
+      { type:'door', x:0,  y:13, dir:'left',  to:'forum',       spawnAt:{ x:28, y:13 } },
+      { type:'door', x:29, y:13, dir:'right', to:'confronto',  spawnAt:{ x:1,  y:13 }, locked:'doc' },
+      { type:'tree', x:5, y:13 }, { type:'tree', x:9, y:13 }, { type:'tree', x:24, y:13 },
+      { type:'car',  x:13, y:13 },
+      { type:'npc', x:16, y:13, name:'FONTE', requires:'rec',
+        dialog:[
+          '— "Você tá com gravador? ...então tá. Vou contar."',
+          '— "Trabalhei dois anos no gabinete do Carlão. Vi a operação."',
+          '— "A Plenitude é fachada. O dinheiro volta pro cunhado dele."',
+          '— "Pega esse pendrive. É a planilha. Não me liga depois."',
+        ],
+        altDialog:[
+          '— "Sem gravador, sem prova. Eu não falo no escuro."',
+          '(Volta com o GRAVADOR. Procura no TFA.)',
+        ],
+        gives:'doc' },
+      { type:'enemy', x:4,  y:13, range:2, kind:'lobby', speed:0.6, name:'LOBISTA' },
+      { type:'enemy', x:11, y:13, range:2, kind:'lobby', speed:0.9, name:'ASSESSOR' },
+      { type:'enemy', x:25, y:13, range:2, kind:'lobby', speed:0.75, name:'LOBISTA' },
+      { type:'clue', x:8,  y:13, ord:9,
+        method:'FONTE · CADERNO DE ANOTAÇÕES',
+        text:'Caderno espiral, capa preta, anotações em caneta azul. Lista nomes de "doadores" da campanha 2022. Três deles aparecem como sócios formais da Plenitude depois das eleições.',
+        article:'A reportagem teve acesso a um caderno entregue por ex-assessor do gabinete. Em suas anotações, três pessoas listadas como "doadores" da campanha 2022 passam a constar como sócios formais do Instituto Plenitude depois das eleições.' },
+      { type:'clue', x:21, y:13, ord:10,
+        method:'PENDRIVE · DOCUMENTO VAZADO',
+        text:'Pendrive criptografado, senha de 12 caracteres entregue à parte. Aberto: planilha contábil com 23 transferências entre Plenitude e Pastel & Cia (2023-2024). Soma: R$ 4,2 milhões.',
+        article:'Planilha contábil obtida em pendrive entregue pela mesma fonte registra 23 transferências entre o Instituto Plenitude e a Pastel & Cia, entre 2023 e 2024, somando R$ 4,2 milhões — montante superior ao valor da emenda original.' },
+    ]
+  },
+
+  /* ---------- 5 · OUTRO LADO (BOSS) ---------- */
+  confronto: {
+    title: 'OUTRO LADO',
+    sub: 'antessala da editoria · 23h59',
+    palette: { wall:'#1a1018', accent:'#3a1820', floor:'#241016' },
+    bg: drawConfrontoBG,
+    isBoss: true,
+    map: [
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '......####..........####......',
+      '..............................',
+      '..............................',
+      '##############################',
+      '##############################',
+      '##############################',
+    ],
+    entities: [
+      { type:'door', x:0,  y:13, dir:'left',  to:'campo',      spawnAt:{ x:28, y:13 } },
+      { type:'door', x:29, y:13, dir:'right', to:'publicacao', spawnAt:{ x:1,  y:13 }, locked:'boss' },
+      { type:'spawn', x:2, y:13 },
+      { type:'boss',
+        x:22, y:13,
+        name:'CARLÃO DO PASTEL',
+        sub:'DEPUTADO · CASO RP-9',
+        hp:20,
+        intro:[
+          '— "Repórterzinho. Você não tem ideia com quem está mexendo."',
+          '— "Meu advogado já tem seu nome. Vou processar a Jornalzão do Cidadão por dano moral, calúnia, difamação."',
+          '— "Some daqui antes que eu chame meus aliados."',
+        ],
+        shouts:[
+          'Some daqui, some daqui!',
+          'O cara quer quebrar meu esquema, velho.',
+        ] },
+    ]
+  },
+
+  /* ---------- 6 · PUBLICAÇÃO ---------- */
+  publicacao: {
+    title: 'PUBLICAÇÃO',
+    sub: 'mesa central · 22:47',
+    palette: { wall:'#1a1d2c', accent:'#3d4566', floor:'#252a40' },
+    bg: drawPublishBG,
+    map: [
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '..............................',
+      '##############################',
+      '##############################',
+      '##############################',
+    ],
+    entities: [
+      { type:'door', x:0, y:13, dir:'left', to:'campo', spawnAt:{ x:28, y:13 } },
+      { type:'desk', x:11, y:13 }, { type:'desk', x:17, y:13 },
+      { type:'finish', x:14, y:13 },
+    ]
+  },
+};
+
+/* ---------- GAME STATE ---------- */
+const game = {
+  state: 'title', // title, play, dialog, end, bossIntro, bossDefeat
+  room: 'redacao',
+  player: { x: 100, y: 200, vx:0, vy:0, w:18, h:28, onGround:false, dir:1, anim:0, flash:0, hp:3, invuln:0, jumpBuffer:0, coyote:0 },
+  abilities: { cam:false, rec:false, doc:false, ped:false, chief:false },
+  clues: [],
+  totalClues: 0,
+  particles: [],
+  projectiles: [],
+  bossProjectiles: [],
+  flashLight: 0,
+  recPulse: 0,
+  recCooldown: 0,
+  pedCooldown: 0,
+  chiefCharges: 0,
+  chiefPulse: 0,
+  shake: 0,
+  toast: { text:'', t:0 },
+  dialog: null,        // { who, lines, idx }
+  pendingPickup: null,
+  guardStunned: 0,
+  spawnAtNext: null,
+  spawnPoint: null,
+  fadeAlpha: 0,
+  fadeDir: 0,
+  pendingRoom: null,
+  boss: null,          // ref to boss entity in current room (or null)
+  bossIntro: null,     // { phase, t, lineIdx, hpFilled, ... }
+};
+
+/* count total clues across rooms */
+for (const r of Object.values(ROOMS)) {
+  for (const e of r.entities) if (e.type === 'clue') game.totalClues++;
+}
+
+/* ---------- HELPERS ---------- */
+const mapAt = (room, cx, cy) => {
+  const m = ROOMS[room].map;
+  if (cy<0||cy>=ROWS||cx<0||cx>=COLS) return '#';
+  return m[cy][cx];
+};
+const solid = ch => ch === '#';
+
+function setRoom(name, spawnAt) {
+  game.room = name;
+  game.particles.length = 0;
+  game.spawnAtNext = spawnAt || null;
+
+  // place player on spawn
+  const room = ROOMS[name];
+  let sp = spawnAt;
+  if (!sp) {
+    const s = room.entities.find(e => e.type === 'spawn');
+    sp = s ? { x:s.x, y:s.y } : { x:2, y:13 };
+  }
+  game.player.x = sp.x*TILE + (TILE-game.player.w)/2;
+  game.player.y = sp.y*TILE + TILE - game.player.h - 1;
+  game.player.vx = 0; game.player.vy = 0;
+  game.player.hp = 3;
+  game.player.invuln = 0;
+  game.spawnPoint = { x: game.player.x, y: game.player.y };
+
+  // reset enemy positions and defeated state in this room
+  // also clear any spawned (transient) advisors from previous boss visit
+  room.entities = room.entities.filter(e => !e._spawned);
+  for (const e of room.entities) {
+    if (e.type === 'enemy') {
+      e._x = e.x*TILE; e._anchor = e.x*TILE; e._dir = 1; e._anim = 0;
+      e.stunned = 0; e.defeated = false;
+      e._hp = e.hp || (e.kind === 'assessor' ? 3 : 1);
+    }
+  }
+  game.projectiles.length = 0;
+  game.bossProjectiles.length = 0;
+
+  // Boss room init
+  game.boss = null;
+  game.bossIntro = null;
+  game.bossDefeat = null;
+  stopBossMusic();
+  hideBossUI();
+  if (room.isBoss) {
+    const bossEnt = room.entities.find(e => e.type === 'boss');
+    if (bossEnt) {
+      if (bossEnt.defeated) {
+        // already beaten in a prior visit — leave dormant, no intro, door stays open
+        bossEnt._x = bossEnt.x * TILE;
+        bossEnt._fall = 1;
+        bossEnt._stunned = 0;
+        bossEnt._invuln = 0;
+        game.boss = bossEnt;
+      } else {
+        bossEnt._x = bossEnt.x * TILE;
+        bossEnt._y = bossEnt.y * TILE;
+        bossEnt._dir = -1;
+        bossEnt._anim = 0;
+        bossEnt._hp = bossEnt.hp;
+        bossEnt._maxHp = bossEnt.hp;
+        bossEnt._attackTimer = 90;
+        bossEnt._spawnTimer = 240;
+        bossEnt._stunned = 0;
+        bossEnt._invuln = 0;
+        bossEnt._enraged = false;
+        bossEnt._fall = 0;
+        game.boss = bossEnt;
+        startBossIntro();
+      }
+    }
+  }
+
+  document.getElementById('roomLabel').textContent = room.title;
+  updateHearts();
+  showRoomName(room.title, room.sub);
+
+  // tension toast on entering boss room
+  if (name === 'confronto') {
+    setTimeout(() => {
+      const t = document.getElementById('toast');
+      t.classList.add('danger');
+      toast('última parada — outro lado · gabinete sabe da pauta');
+      setTimeout(()=>t.classList.remove('danger'), 2600);
+    }, 600);
+  }
+}
+
+function updateHearts() {
+  const el = document.getElementById('hearts');
+  if (!el) return;
+  let html = '';
+  for (let i = 0; i < 3; i++) {
+    html += `<span class="${i < game.player.hp ? 'on' : ''}">♥</span>`;
+  }
+  el.innerHTML = html;
+}
+function pulseHearts() {
+  const el = document.getElementById('hearts');
+  if (!el) return;
+  el.classList.remove('hit');
+  void el.offsetWidth;
+  el.classList.add('hit');
+}
+
+function showRoomName(t, sub) {
+  const el = document.getElementById('roomName');
+  el.innerHTML = t + (sub ? `<span class="sub">${sub}</span>` : '');
+  el.classList.add('show');
+  clearTimeout(showRoomName._t);
+  showRoomName._t = setTimeout(()=>el.classList.remove('show'), 1900);
+}
+
+function toast(text) {
+  const el = document.getElementById('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>el.classList.remove('show'), 2400);
+}
+
+function openDialog(who, lines) {
+  game.state = 'dialog';
+  game.dialog = { who, lines, idx:0 };
+  const dl = document.getElementById('dialog');
+  document.getElementById('dlgWho').textContent = who;
+  document.getElementById('dlgText').textContent = lines[0];
+  dl.classList.remove('hidden');
+  SFX.dialog();
+}
+function _dlgChar() { SFX.dialog(); }
+function advanceDialog() {
+  game.dialog.idx++;
+  if (game.dialog.idx >= game.dialog.lines.length) {
+    closeDialog();
+    if (game.pendingPickup) {
+      const ab = game.pendingPickup;
+      game.abilities[ab.key] = true;
+      const chipMap = { cam:'abCam', rec:'abRec', ped:'abPed', chief:'abChief' };
+      const elId = chipMap[ab.key];
+      if (elId) document.getElementById(elId)?.classList.add('on');
+      const tcMap = { cam:'.tc-z', rec:'.tc-x', ped:'.tc-c', chief:'.tc-v' };
+      if (tcMap[ab.key]) document.querySelector(tcMap[ab.key])?.classList.remove('locked');
+      toast(`+${ab.name}`);
+      SFX.ability();
+      game.pendingPickup = null;
+    }
+  } else {
+    document.getElementById('dlgText').textContent = game.dialog.lines[game.dialog.idx];
+    SFX.dialog();
+  }
+}
+function closeDialog() {
+  document.getElementById('dialog').classList.add('hidden');
+  game.dialog = null;
+  game.state = 'play';
+}
+
+/* ---------- COLLISION ---------- */
+function rectVsTiles(p, dx, dy) {
+  // Move axis-by-axis
+  // X
+  p.x += dx;
+  let bbox = playerBBox(p);
+  let { l, r, t, b } = bbox;
+  if (dx > 0) {
+    for (let cy = Math.floor(t/TILE); cy <= Math.floor((b-1)/TILE); cy++) {
+      const cx = Math.floor((r-1)/TILE);
+      if (solid(mapAt(game.room, cx, cy))) { p.x = cx*TILE - p.w; p.vx = 0; break; }
+    }
+  } else if (dx < 0) {
+    for (let cy = Math.floor(t/TILE); cy <= Math.floor((b-1)/TILE); cy++) {
+      const cx = Math.floor(l/TILE);
+      if (solid(mapAt(game.room, cx, cy))) { p.x = (cx+1)*TILE; p.vx = 0; break; }
+    }
+  }
+  // Y
+  p.y += dy;
+  bbox = playerBBox(p);
+  ({l, r, t, b} = bbox);
+  p.onGround = false;
+  if (dy > 0) {
+    for (let cx = Math.floor(l/TILE); cx <= Math.floor((r-1)/TILE); cx++) {
+      const cy = Math.floor((b-1)/TILE);
+      if (solid(mapAt(game.room, cx, cy))) { p.y = cy*TILE - p.h; p.vy = 0; p.onGround = true; break; }
+    }
+  } else if (dy < 0) {
+    for (let cx = Math.floor(l/TILE); cx <= Math.floor((r-1)/TILE); cx++) {
+      const cy = Math.floor(t/TILE);
+      if (solid(mapAt(game.room, cx, cy))) { p.y = (cy+1)*TILE; p.vy = 0; break; }
+    }
+  }
+}
+function playerBBox(p) { return { l:p.x, r:p.x+p.w, t:p.y, b:p.y+p.h }; }
+
+function entityRect(e) {
+  if (e.type === 'noisewall') return { x:e.x*TILE, y:e.y*TILE, w:TILE, h:(e.h||1)*TILE };
+  if (e.type === 'door')      return { x:e.x*TILE, y:e.y*TILE - TILE, w:TILE, h:TILE*2 };
+  return { x:e.x*TILE, y:e.y*TILE, w:TILE, h:TILE };
+}
+function overlap(a, b) {
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+/* ---------- UPDATE ---------- */
+function update(dt) {
+  if (game.state !== 'play') return;
+  if (game.fadeDir !== 0) return; // freeze during transitions
+  const p = game.player;
+
+  // Horizontal
+  const left = keys['arrowleft']||keys['a'];
+  const right = keys['arrowright']||keys['d'];
+  const accel = 0.7, max = 3.4, friction = 0.78;
+  if (left)  { p.vx -= accel; p.dir = -1; }
+  if (right) { p.vx += accel; p.dir =  1; }
+  if (!left && !right) p.vx *= friction;
+  p.vx = Math.max(-max, Math.min(max, p.vx));
+
+  // Jump — with buffer and coyote time for snappy feel
+  const jumpReq = pressed['arrowup']||pressed['w']||pressed[' '];
+  if (jumpReq) p.jumpBuffer = 8;            // remember press for 8 frames
+  else if (p.jumpBuffer > 0) p.jumpBuffer--;
+  if (p.onGround) p.coyote = 7;             // grace 7 frames after leaving ground
+  else if (p.coyote > 0) p.coyote--;
+  if (p.jumpBuffer > 0 && p.coyote > 0) {
+    p.vy = -8.6;
+    p.onGround = false;
+    p.jumpBuffer = 0;
+    p.coyote = 0;
+    SFX.jump();
+  }
+  // Variable jump (release early = shorter)
+  if (p.vy < 0 && !(keys['arrowup']||keys['w']||keys[' '])) p.vy *= 0.84;
+
+  // Gravity
+  p.vy += 0.45;
+  if (p.vy > 12) p.vy = 12;
+
+  const wasGrounded = p.onGround;
+  rectVsTiles(p, p.vx, 0);
+  rectVsTiles(p, 0, p.vy);
+  if (!wasGrounded && p.onGround && p.vy === 0) SFX.land();
+
+  // Fell out (none in current rooms but safe)
+  if (p.y > H + 200) respawnPlayer();
+
+  // Animation timer
+  if (Math.abs(p.vx) > 0.4 && p.onGround) p.anim += dt*0.012*Math.abs(p.vx);
+  else p.anim *= 0.6;
+
+  // Ability triggers
+  if (pressed['z']) {
+    if (game.abilities.cam) {
+      game.flashLight = 1.0;
+      game.guardStunned = Math.max(game.guardStunned, 180); // 3s @60fps
+      for (const e of ROOMS[game.room].entities) {
+        if (e.type === 'enemy') e.stunned = Math.max(e.stunned || 0, 180);
+      }
+      spawnFlashParticles();
+      SFX.flash();
+    } else {
+      toast('câmera ainda não — passa no arquivo');
+    }
+  }
+  if (pressed['x'] && !game.abilities.rec) {
+    toast('gravador ainda não — passa no TFA');
+  }
+  if (pressed['x'] && game.abilities.rec && game.recCooldown <= 0) {
+    game.recPulse = 1.0;
+    game.recCooldown = 22;
+    // shoot sound-wave projectile in facing direction
+    game.projectiles.push({
+      x: p.x + p.w/2, y: p.y + p.h/2 - 2,
+      vx: (p.dir > 0 ? 7.5 : -7.5),
+      life: 50, dir: p.dir, age: 0,
+      weapon: 'rec', dmg: 1,
+    });
+    SFX.rec();
+  }
+  if (game.recCooldown > 0) game.recCooldown--;
+  // PEDIDO FORMAL [C] — arcing envelope, pierces shield, 2 dmg
+  if (pressed['c'] && !game.abilities.ped) {
+    toast('pedido formal trancado — chega lá no outro lado');
+  }
+  if (pressed['c'] && game.abilities.ped && game.pedCooldown <= 0) {
+    game.pedCooldown = 50;
+    game.projectiles.push({
+      x: p.x + p.w/2, y: p.y + p.h/2,
+      vx: (p.dir > 0 ? 5.6 : -5.6),
+      vy: -3.6,
+      gravity: 0.18,
+      life: 100, dir: p.dir, age: 0,
+      weapon: 'ped', dmg: 2, pierce: true,
+    });
+    SFX.ped();
+  }
+  if (game.pedCooldown > 0) game.pedCooldown--;
+  // EDITORA-CHEFE [V] — clears advisors on screen, 2 charges
+  if (pressed['v'] && !game.abilities.chief) {
+    toast('editora ainda não foi acionada');
+  }
+  if (pressed['v'] && game.abilities.chief && game.chiefCharges > 0) {
+    let cleared = 0;
+    for (const e of ROOMS[game.room].entities) {
+      if (e.type === 'enemy' && e.kind === 'assessor' && !e.defeated) {
+        e.defeated = true;
+        flashSparks(e._x + TILE/2, e.y*TILE + TILE/2, '#ffffff');
+        cleared++;
+      }
+    }
+    if (cleared > 0) {
+      game.chiefCharges--;
+      game.chiefPulse = 1.0;
+      toast(`editora-chefe entrou na linha · ${cleared} aliado${cleared>1?'s':''} fora · ${game.chiefCharges} carga${game.chiefCharges===1?'':'s'}`);
+      SFX.chief();
+      game.shake = 4;
+    } else {
+      toast('editora não atende — nenhum aliado à vista');
+    }
+  } else if (pressed['v'] && game.abilities.chief && game.chiefCharges <= 0) {
+    toast('editora sem cargas — você está sozinho');
+  }
+  if (game.chiefPulse > 0) game.chiefPulse = Math.max(0, game.chiefPulse - dt*0.0025);
+  if (game.flashLight > 0) game.flashLight = Math.max(0, game.flashLight - dt*0.0035);
+  if (game.recPulse > 0)   game.recPulse   = Math.max(0, game.recPulse   - dt*0.0018);
+  if (game.guardStunned > 0) game.guardStunned--;
+
+  // Update projectiles (apply gravity for arcing weapons like ped)
+  for (const proj of game.projectiles) {
+    proj.x += proj.vx;
+    if (proj.gravity != null) {
+      proj.vy = (proj.vy ?? 0) + proj.gravity;
+      proj.y += proj.vy;
+    }
+    proj.life--;
+    proj.age++;
+    const cx = Math.floor(proj.x/TILE), cy = Math.floor(proj.y/TILE);
+    if (solid(mapAt(game.room, cx, cy))) proj.life = 0;
+  }
+  // Projectile vs boss / enemy
+  for (const proj of game.projectiles) {
+    if (proj.life <= 0) continue;
+    const prj = { x: proj.x-8, y: proj.y-8, w:16, h:16 };
+
+    // Boss (priority hit)
+    if (game.boss && !game.boss.defeated) {
+      const b = game.boss;
+      const bw = 36, bh = 48;
+      const br = { x: b._x - 2, y: b.y*TILE + TILE - bh, w: bw, h: bh };
+      const liveAssessors = ROOMS[game.room].entities.filter(e =>
+        e.type === 'enemy' && e.kind === 'assessor' && !e.defeated
+      ).length;
+      const shielded = liveAssessors > 0 && !proj.pierce;
+      if (overlap(prj, br)) {
+        if (b._invuln > 0) {
+          // skip — boss in invuln frames
+        } else if (shielded) {
+          toast('os aliados blindam o deputado · use o pedido [c]');
+          flashSparks(proj.x, proj.y, '#c0392b');
+          proj.life = 0;
+          continue;
+        } else {
+          b._hp -= proj.dmg || 1;
+          b._invuln = 24;
+          b._stunned = 26;
+          flashSparks(b._x + bw/2 - 4, br.y + 6, proj.weapon === 'ped' ? '#d4a017' : '#e8e3d0');
+          SFX.bossHit();
+          updateBossHpUI();
+          game.shake = 6;
+          proj.life = 0;
+          if (b._hp <= 0) onBossDefeated();
+          continue;
+        }
+      }
+    }
+
+    // Regular enemies (and dynamically-spawned assessores)
+    for (const e of ROOMS[game.room].entities) {
+      if (e.type !== 'enemy' || e.defeated) continue;
+      const er = { x: e._x + 4, y: e.y*TILE + 2, w: 24, h: 30 };
+      if (overlap(prj, er)) {
+        e._hp = (e._hp ?? 1) - (proj.dmg || 1);
+        if (e._hp <= 0) {
+          e.defeated = true;
+          flashSparks(e._x + TILE/2, e.y*TILE + TILE/2, '#d4a017');
+          toast(e.kind === 'assessor' ? 'aliado neutralizado' : 'lobista exposto');
+          SFX.enemyDown();
+        } else {
+          flashSparks(e._x + TILE/2, e.y*TILE + TILE/2, '#c0392b');
+          e.stunned = Math.max(e.stunned || 0, 14);
+          SFX.hit();
+        }
+        proj.life = 0;
+        break;
+      }
+    }
+  }
+  game.projectiles = game.projectiles.filter(pr => pr.life > 0);
+
+  // Boss AI + projectiles + assessor cleanup
+  if (game.boss) {
+    updateBoss(dt);
+    updateBossProjectiles();
+  }
+
+  // Entities
+  const room = ROOMS[game.room];
+
+  // Update enemies (patrol)
+  for (const e of room.entities) {
+    if (e.type !== 'enemy' || e.defeated) continue;
+    if (e._x === undefined) { e._x = e.x*TILE; e._anchor = e.x*TILE; e._dir = 1; e._anim = 0; e.stunned = 0; }
+    if (e.stunned > 0) { e.stunned--; continue; }
+    e._x += (e.speed || 0.6) * e._dir;
+    e._anim += 0.08;
+    const range = (e.range || 3) * TILE;
+    if (e._x > e._anchor + range) { e._x = e._anchor + range; e._dir = -1; }
+    if (e._x < e._anchor - range) { e._x = e._anchor - range; e._dir = 1; }
+  }
+
+  // Invulnerability tick
+  if (p.invuln > 0) p.invuln--;
+  if (game.shake > 0) game.shake--;
+
+  const pr = playerBBox(p);
+  const prRect = { x:pr.l, y:pr.t, w:p.w, h:p.h };
+
+  // Enemy ↔ player collision
+  for (const e of room.entities) {
+    if (e.type !== 'enemy' || e.stunned > 0 || e.defeated) continue;
+    const er = { x: e._x + 4, y: e.y*TILE + 2, w: 24, h: 30 };
+    if (overlap(prRect, er) && p.invuln <= 0) {
+      p.hp--;
+      p.invuln = 60;
+      const knock = (p.x + p.w/2 < e._x + TILE/2) ? -1 : 1;
+      p.vx = knock * 5.5;
+      p.vy = -5.5;
+      flashSparks(p.x+p.w/2, p.y+p.h/2, '#c0392b');
+      game.shake = 8;
+      pulseHearts();
+      SFX.hit();
+      if (p.hp <= 0) {
+        SFX.gameOver();
+        firedGame();
+        return;
+      }
+      updateHearts();
+    }
+  }
+
+  for (const e of room.entities) {
+    if (e.type === 'noisewall') {
+      // breakable by rec pulse
+      if (game.recPulse > 0.6) e.broken = true;
+      continue;
+    }
+    if (e.type === 'guard') continue;
+    if (!e._collected && (e.type === 'clue')) {
+      const er = entityRect(e);
+      // hidden clues require ability
+      if (e.hidden && !game.abilities[e.hiddenBy]) continue;
+      if (overlap(prRect, er)) {
+        e._collected = true;
+        game.clues.push(e);
+        document.getElementById('clueCount').textContent = `${game.clues.length}/${game.totalClues}`;
+        flashSparks(er.x+TILE/2, er.y+TILE/2, '#d4a017');
+        SFX.clue();
+        openDialog('PISTA · ' + (e.method || 'DOCUMENTO'), [e.text]);
+      }
+    }
+    if (e.type === 'ability' && !game.abilities[e.key]) {
+      const er = entityRect(e);
+      if (overlap(prRect, er)) {
+        game.pendingPickup = e;
+        flashSparks(er.x+TILE/2, er.y+TILE/2, '#4ade80');
+        openDialog('SISTEMA', [e.text]);
+      }
+    }
+    if (e.type === 'finish') {
+      const er = entityRect(e);
+      if (overlap(prRect, er)) endGame();
+    }
+  }
+
+  // Hazards (spikes)
+  // none in current maps; left for future
+
+  // Doors / interact
+  if (pressed['e']) {
+    for (const e of room.entities) {
+      if (e.type === 'door') {
+        const er = entityRect(e);
+        if (overlap(prRect, er)) {
+          if (e.locked) {
+            if (e.locked === 'guard' && game.guardStunned <= 0) {
+              toast('um segurança bloqueia o caminho');
+              continue;
+            }
+            if (e.locked === 'doc' && !game.abilities.doc) {
+              toast('precisa de prova pra confrontar o gabinete');
+              continue;
+            }
+            if (e.locked === 'boss' && !(game.boss && game.boss.defeated)) {
+              toast('Carlão ainda barra a saída');
+              continue;
+            }
+          }
+          // transition
+          SFX.door();
+          fadeTo(()=>setRoom(e.to, e.spawnAt));
+          return;
+        }
+      }
+      if (e.type === 'npc' || e.type === 'guard') {
+        const er = entityRect(e);
+        const near = { x:er.x-TILE, y:er.y-TILE/2, w:er.w+TILE*2, h:er.h+TILE };
+        if (overlap(prRect, near)) {
+          const useAlt = e.requires && !game.abilities[e.requires];
+          const lines = useAlt ? (e.altDialog || e.dialog) : e.dialog;
+          openDialog(e.name, lines);
+          if (e.gives && !useAlt && !game.abilities[e.gives]) {
+            game.pendingPickup = { key:e.gives, name:'DOCUMENTO VAZADO' };
+          }
+        }
+      }
+    }
+  }
+}
+
+function respawnPlayer() {
+  const p = game.player;
+  p.x = game.spawnPoint.x; p.y = game.spawnPoint.y;
+  p.vx = 0; p.vy = 0;
+}
+
+/* ---------- PARTICLES ---------- */
+function flashSparks(x, y, color) {
+  for (let i=0;i<14;i++) {
+    const a = Math.random()*Math.PI*2;
+    const s = Math.random()*2.5+0.6;
+    game.particles.push({ x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s-0.6, life:30+Math.random()*20, color });
+  }
+}
+function spawnFlashParticles() {
+  const cx = game.player.x+game.player.w/2, cy = game.player.y+game.player.h/2;
+  for (let i=0;i<26;i++) {
+    const a = Math.random()*Math.PI*2;
+    const s = Math.random()*4+1;
+    game.particles.push({ x:cx, y:cy, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:25+Math.random()*15, color:'#ffffff' });
+  }
+}
+function updateParticles() {
+  for (const p of game.particles) {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.life--;
+  }
+  game.particles = game.particles.filter(p => p.life > 0);
+}
+
+/* ---------- FADE TRANSITIONS ---------- */
+function fadeTo(fn) {
+  game.fadeDir = 1; game._fadeFn = fn;
+}
+
+/* ---------- BOSS UI HELPERS ---------- */
+function showBossUI() {
+  document.getElementById('bossHp').classList.add('show');
+}
+function hideBossUI() {
+  document.getElementById('bossHp').classList.remove('show');
+  document.getElementById('bossIntro').classList.add('hidden');
+  document.getElementById('bossIntro').classList.remove('show');
+  document.getElementById('bossNameCard').classList.add('hidden');
+  document.getElementById('bossShout').classList.add('hidden');
+  document.getElementById('bossGo').classList.add('hidden');
+}
+function buildBossHpBar(max, current) {
+  const bar = document.getElementById('bossHpBar');
+  let html = '';
+  for (let i = 0; i < max; i++) {
+    html += `<i class="${i < current ? '' : 'empty'}"></i>`;
+  }
+  bar.innerHTML = html;
+}
+function updateBossHpUI() {
+  if (!game.boss) return;
+  buildBossHpBar(game.boss._maxHp, Math.max(0, game.boss._hp));
+}
+
+/* ---------- BOSS INTRO (Mega Man-style) ---------- */
+function startBossIntro() {
+  game.state = 'bossIntro';
+  game.bossIntro = {
+    phase: 0,    // 0: walk-in, 1: dialog, 2: name reveal, 3: hp fill, 4: GO!, 5: done
+    t: 0,
+    lineIdx: 0,
+    hpFilled: 0,
+  };
+  // auto-grant new weapons
+  if (!game.abilities.ped) {
+    game.abilities.ped = true;
+    document.getElementById('abPed')?.classList.add('on');
+    document.querySelector('.tc-c')?.classList.remove('locked');
+  }
+  if (!game.abilities.chief) {
+    game.abilities.chief = true;
+    document.getElementById('abChief')?.classList.add('on');
+    document.querySelector('.tc-v')?.classList.remove('locked');
+  }
+  game.chiefCharges = 2;
+  // start off-screen right
+  game.boss._x = W + 40;
+  game.boss._dir = -1;
+  // overlay
+  const intro = document.getElementById('bossIntro');
+  intro.classList.remove('hidden');
+  intro.classList.remove('show');     // fades in via .show
+  document.getElementById('bossQuoteWho').textContent = (game.boss.name + ' · ' + (game.boss.sub || '')).toUpperCase();
+  document.getElementById('bossQuoteText').textContent = '';
+  SFX.bossIntro();
+}
+function updateBossIntro() {
+  if (!game.bossIntro || !game.boss) return;
+  const bi = game.bossIntro;
+  bi.t++;
+  const targetX = game.boss.x * TILE;
+
+  if (bi.phase === 0) {
+    // walk-in
+    game.boss._x -= 2.5;
+    game.boss._anim += 0.18;
+    if (game.boss._x <= targetX) {
+      game.boss._x = targetX;
+      bi.phase = 1; bi.t = 0;
+      const intro = document.getElementById('bossIntro');
+      intro.classList.add('show');
+      document.getElementById('bossQuoteText').textContent = game.boss.intro[0];
+      SFX.dialog();
+    }
+  } else if (bi.phase === 1) {
+    // wait for input — advanced via advanceBossIntro()
+  } else if (bi.phase === 2) {
+    if (bi.t === 1) {
+      const intro = document.getElementById('bossIntro');
+      intro.classList.remove('show');
+      setTimeout(()=>intro.classList.add('hidden'), 380);
+      const card = document.getElementById('bossNameCard');
+      document.getElementById('bossNameBig').textContent = game.boss.name;
+      document.getElementById('bossNameSmall').textContent = game.boss.sub || '';
+      card.classList.remove('hidden');
+      showBossUI();
+      buildBossHpBar(game.boss._maxHp, 0);
+      SFX.bossIntro();
+    }
+    if (bi.t > 32) { bi.phase = 3; bi.t = 0; }
+  } else if (bi.phase === 3) {
+    if (bi.t % 7 === 0 && bi.hpFilled < game.boss._maxHp) {
+      bi.hpFilled++;
+      buildBossHpBar(game.boss._maxHp, bi.hpFilled);
+      SFX.dialog();
+    }
+    // big shouts while HP fills (e.g. "Some daqui, some daqui!")
+    const shouts = game.boss.shouts;
+    if (shouts && shouts.length) {
+      const shout = document.getElementById('bossShout');
+      const halfway = Math.floor((game.boss._maxHp * 7) / 2);
+      if (bi.t === 1) {
+        shout.textContent = shouts[0];
+        shout.classList.remove('hidden');
+        shout.style.animation = 'none';
+        shout.offsetWidth;
+        shout.style.animation = '';
+      } else if (shouts[1] && bi.t === halfway) {
+        shout.textContent = shouts[1];
+        shout.style.animation = 'none';
+        shout.offsetWidth;
+        shout.style.animation = '';
+      }
+    }
+    if (bi.hpFilled >= game.boss._maxHp && bi.t > game.boss._maxHp * 7 + 28) {
+      bi.phase = 4; bi.t = 0;
+      document.getElementById('bossNameCard').classList.add('hidden');
+      document.getElementById('bossShout').classList.add('hidden');
+      const go = document.getElementById('bossGo');
+      go.classList.remove('hidden');
+      SFX.bossGo();
+      setTimeout(()=>go.classList.add('hidden'), 1100);
+    }
+  } else if (bi.phase === 4) {
+    if (bi.t > 60) {
+      bi.phase = 5;
+      game.state = 'play';
+      game.bossIntro = null;
+      toast('+ pedido formal [c] · + editora-chefe [v] (2x)');
+      startBossMusic();
+    }
+  }
+}
+function advanceBossIntro() {
+  if (!game.bossIntro || game.bossIntro.phase !== 1) return;
+  const bi = game.bossIntro;
+  bi.lineIdx++;
+  if (bi.lineIdx >= game.boss.intro.length) {
+    bi.phase = 2;
+    bi.t = 0;
+  } else {
+    document.getElementById('bossQuoteText').textContent = game.boss.intro[bi.lineIdx];
+    SFX.dialog();
+  }
+}
+
+/* ---------- BOSS AI ---------- */
+function updateBoss(dt) {
+  const b = game.boss;
+  if (!b || b.defeated) return;
+  if (b._invuln > 0) b._invuln--;
+  if (b._groundY === undefined) b._groundY = b.y * TILE;
+  if (b._y === undefined) b._y = b._groundY;
+
+  // gravity / jump physics — always apply, even when stunned
+  b._vy = (b._vy || 0) + 0.32;
+  const wasAirborne = !!b._airborne;
+  b._y += b._vy;
+  if (b._y >= b._groundY) {
+    b._y = b._groundY;
+    b._vy = 0;
+    if (wasAirborne) {
+      game.shake = Math.max(game.shake || 0, b._enraged ? 6 : 3);
+      SFX.bossLand();
+      if (b._groundPound) {
+        b._groundPound = false;
+        spawnDiscurso(b, -1);
+        spawnDiscurso(b,  1);
+      }
+    }
+    b._airborne = false;
+  } else {
+    b._airborne = true;
+  }
+
+  if (b._stunned > 0) {
+    b._stunned--;
+    b._anim += 0.04;
+    return;
+  }
+
+  // patrol — slow walk left/right within range
+  if (!b._patrolDir) b._patrolDir = -1;
+  b._x += b._patrolDir * (b._enraged ? 0.7 : 0.45);
+  b._anim += 0.07;
+  const minX = (b.x - 4) * TILE;
+  const maxX = (b.x + 1) * TILE;
+  if (b._x < minX) { b._x = minX; b._patrolDir =  1; }
+  if (b._x > maxX) { b._x = maxX; b._patrolDir = -1; }
+
+  // face player
+  const px = game.player.x + game.player.w/2;
+  b._dir = (px < b._x + 18) ? -1 : 1;
+
+  // jump trigger (only when grounded)
+  b._jumpCd = (b._jumpCd === undefined ? 180 : b._jumpCd - 1);
+  if (b._jumpCd <= 0 && !b._airborne) {
+    const doPound = b._enraged && Math.random() < 0.45;
+    b._vy = doPound ? -8.4 : -6;
+    if (doPound) b._groundPound = true;
+    b._patrolDir = b._dir; // hop toward player
+    SFX.bossJump();
+    b._jumpCd = b._enraged ? 110 : 200;
+  }
+
+  // attack timer — mix processo + discurso, no attacks mid-air
+  b._attackTimer--;
+  if (b._attackTimer <= 0 && !b._airborne) {
+    const discursoChance = b._enraged ? 0.5 : 0.32;
+    if (Math.random() < discursoChance) {
+      spawnDiscurso(b, b._dir);
+    } else {
+      spawnProcesso(b);
+    }
+    b._attackTimer = b._enraged ? 75 : 110;
+  }
+
+  // advisor spawn timer (max simultaneous)
+  const liveAssessors = ROOMS[game.room].entities.filter(e =>
+    e.type === 'enemy' && e.kind === 'assessor' && !e.defeated
+  ).length;
+  const maxAssessors = b._enraged ? 5 : 3;
+  b._spawnTimer--;
+  if (b._spawnTimer <= 0 && liveAssessors < maxAssessors) {
+    spawnAssessor();
+    b._spawnTimer = b._enraged ? 130 : 200;
+  } else if (liveAssessors >= maxAssessors) {
+    b._spawnTimer = 60;
+  }
+
+  // enraged trigger at half HP
+  if (!b._enraged && b._hp <= b._maxHp / 2) {
+    b._enraged = true;
+    toast('Carlão enfurecido — vai chamar mais aliados');
+    game.shake = 8;
+  }
+}
+
+function spawnProcesso(b) {
+  const px = game.player.x + game.player.w/2;
+  const dir = (px < b._x + 18) ? -1 : 1;
+  game.bossProjectiles.push({
+    x: b._x + 18 + dir*16,
+    y: (b._y !== undefined ? b._y : b.y*TILE) + 14,
+    vx: dir * 3.4,
+    vy: -4.7,
+    gravity: 0.18,
+    life: 220,
+    rot: 0,
+    rotV: dir * 0.22,
+  });
+  SFX.processo();
+}
+
+function spawnDiscurso(b, dir) {
+  dir = dir || b._dir || 1;
+  game.bossProjectiles.push({
+    x: b._x + 18 + dir * 18,
+    y: (b._y !== undefined ? b._y : b.y*TILE) + 14,
+    vx: dir * 5.6,
+    vy: 0,
+    gravity: 0,
+    life: 110,
+    rot: 0,
+    rotV: dir * 0.08,
+    kind: 'discurso',
+  });
+  SFX.discurso();
+}
+
+function spawnAssessor() {
+  const room = ROOMS[game.room];
+  const fromLeft = Math.random() < 0.5;
+  const startTileX = fromLeft ? 0 : COLS - 1;
+  const startPx = fromLeft ? -16 : (COLS - 1) * TILE + 16;
+  const anchorPx = (fromLeft ? 4 : COLS - 5) * TILE;
+  const ent = {
+    type: 'enemy',
+    kind: 'assessor',
+    x: startTileX,
+    y: 13,
+    range: 5,
+    speed: 1.05,
+    name: 'ALIADO',
+    hp: 3,
+    _x: startPx,
+    _anchor: anchorPx,
+    _dir: fromLeft ? 1 : -1,
+    _anim: 0,
+    stunned: 0,
+    defeated: false,
+    _hp: 3,
+    _spawned: true,
+  };
+  room.entities.push(ent);
+  flashSparks(startPx + TILE/2, 13*TILE + TILE/2, '#7a3c8a');
+}
+
+function updateBossProjectiles() {
+  for (const bp of game.bossProjectiles) {
+    bp.x += bp.vx;
+    bp.vy += bp.gravity;
+    bp.y += bp.vy;
+    bp.rot += bp.rotV;
+    bp.life--;
+    // hit ground (arcing only)
+    if (bp.kind !== 'discurso' && bp.y >= (ROWS - 3) * TILE) {
+      bp.life = 0;
+      flashSparks(bp.x, (ROWS-3)*TILE - 4, '#c0392b');
+    }
+    // discurso dies when offscreen
+    if (bp.kind === 'discurso' && (bp.x < -40 || bp.x > W + 40)) {
+      bp.life = 0;
+    }
+  }
+  // collision with player
+  const p = game.player;
+  if (p.invuln <= 0) {
+    for (const bp of game.bossProjectiles) {
+      if (bp.life <= 0) continue;
+      const bpr = { x: bp.x-10, y: bp.y-10, w:20, h:20 };
+      const pr = { x: p.x, y: p.y, w: p.w, h: p.h };
+      if (overlap(bpr, pr)) {
+        p.hp--;
+        p.invuln = 60;
+        const knock = (p.x + p.w/2 < bp.x) ? -1 : 1;
+        p.vx = knock * 4.5;
+        p.vy = -4.5;
+        flashSparks(p.x+p.w/2, p.y+p.h/2, '#c0392b');
+        game.shake = 8;
+        pulseHearts();
+        SFX.hit();
+        bp.life = 0;
+        if (p.hp <= 0) {
+          SFX.gameOver();
+          firedGame();
+          return;
+        }
+        updateHearts();
+      }
+    }
+  }
+  game.bossProjectiles = game.bossProjectiles.filter(bp => bp.life > 0);
+}
+
+function onBossDefeated() {
+  game.boss.defeated = true;
+  game.boss._fall = 0;
+  game.bossProjectiles.length = 0;
+  // clear remaining assessores
+  for (const e of ROOMS[game.room].entities) {
+    if (e.type === 'enemy' && e.kind === 'assessor' && !e.defeated) e.defeated = true;
+  }
+  SFX.bossDie();
+  stopBossMusic();
+  game.state = 'bossDefeat';
+  game.bossDefeat = { t: 0 };
+  game.shake = 14;
+}
+
+function updateBossDefeat() {
+  if (!game.bossDefeat) return;
+  game.bossDefeat.t++;
+  if (game.boss) {
+    game.boss._anim += 0.04;
+    game.boss._fall = Math.min(1, game.boss._fall + 0.025);
+  }
+  if (game.bossDefeat.t === 30) {
+    document.getElementById('bossHp').classList.remove('show');
+  }
+  if (game.bossDefeat.t === 70) {
+    openDialog('EDITOR · NA VOZ DA REDAÇÃO', [
+      'Toledo. Falou com o gabinete? Beleza.',
+      'Pediu manifestação por escrito, registrou tudo. Outro lado: feito.',
+      'Agora vai. Publica. A porta da editoria tá liberada.',
+    ]);
+    game.bossDefeat = null;
+  }
+}
+
+/* ---------- BACKGROUND DRAWERS ---------- */
+function drawNewsroomBG() {
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0d1426'); g.addColorStop(1,'#080c18');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // distant cubicles
+  for (let i=0;i<8;i++){
+    const x = i*120 + 30;
+    ctx.fillStyle = 'rgba(60,80,120,.18)';
+    ctx.fillRect(x, 280, 80, 50);
+    ctx.fillStyle = 'rgba(212,160,23,.06)';
+    ctx.fillRect(x+10, 290, 18, 14);
+  }
+  // window with rain
+  ctx.fillStyle = 'rgba(212,160,23,.05)';
+  ctx.fillRect(120, 60, 280, 140);
+  ctx.strokeStyle = 'rgba(212,160,23,.2)'; ctx.lineWidth = 1;
+  ctx.strokeRect(120, 60, 280, 140);
+  ctx.beginPath();
+  ctx.moveTo(260,60); ctx.lineTo(260,200); ctx.moveTo(120,130); ctx.lineTo(400,130);
+  ctx.stroke();
+  // headline ticker
+  ctx.fillStyle = 'rgba(212,160,23,.55)';
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillText('• AO VIVO · JORNALZÃO DO CIDADÃO · APURAÇÃO EM ANDAMENTO ·', 480, 80);
+  ctx.fillStyle = 'rgba(232,227,208,.22)';
+  ctx.fillText('lead: tip anônimo · emendas Carlão do Pastel · 04:09', 480, 100);
+  ctx.fillText('checagem: CNPJ Plenitude · empenho 0192/2023', 480, 116);
+}
+function drawArchiveBG() {
+  ctx.fillStyle = '#100c08';
+  ctx.fillRect(0,0,W,H);
+  // shelves of folders in distance
+  for (let r=0;r<4;r++){
+    for (let i=0;i<14;i++){
+      const x = i*70 + 10, y = 60 + r*70;
+      ctx.fillStyle = `rgba(${80+Math.random()*40},${50+Math.random()*30},${30+Math.random()*20},.45)`;
+      ctx.fillRect(x, y, 60, 50);
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      for (let k=0;k<6;k++) ctx.fillRect(x+3+k*9, y+4, 7, 42);
+    }
+  }
+  ctx.fillStyle = 'rgba(212,160,23,.06)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(212,160,23,.4)';
+  ctx.font = '9px JetBrains Mono';
+  ctx.fillText('SEÇÃO 19 · PROCESSOS SELADOS · ACESSO RESTRITO', 14, 14);
+}
+function drawCourthouseBG() {
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0c0d12'); g.addColorStop(1,'#070811');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // columns
+  for (let i=0;i<6;i++){
+    const x = 60 + i*160;
+    ctx.fillStyle = 'rgba(180,180,200,.06)';
+    ctx.fillRect(x, 30, 50, 360);
+    ctx.fillStyle = 'rgba(180,180,200,.12)';
+    ctx.fillRect(x-6, 30, 62, 8);
+    ctx.fillRect(x-6, 380, 62, 8);
+  }
+  ctx.fillStyle = 'rgba(212,160,23,.4)';
+  ctx.font = '9px JetBrains Mono';
+  ctx.fillText('TFA · TRIBUNAL FEDERAL DE AUDITORIA · CASO RP-9', 14, 14);
+}
+function drawFieldBG() {
+  // night sky gradient
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0a1218'); g.addColorStop(.6,'#0d1f1a'); g.addColorStop(1,'#091410');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // stars
+  for (let i=0;i<60;i++){
+    ctx.fillStyle = `rgba(255,255,255,${0.1+Math.random()*0.4})`;
+    ctx.fillRect((i*97)%W, (i*53)%200, 1, 1);
+  }
+  // distant hills
+  ctx.fillStyle = '#0e1a14';
+  ctx.beginPath(); ctx.moveTo(0,360);
+  for (let x=0;x<=W;x+=40) ctx.lineTo(x, 340 - Math.sin(x*0.013)*22);
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
+  ctx.fillStyle = '#0a1410';
+  ctx.beginPath(); ctx.moveTo(0,400);
+  for (let x=0;x<=W;x+=30) ctx.lineTo(x, 380 - Math.sin(x*0.02+1)*14);
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
+  ctx.fillStyle = 'rgba(212,160,23,.35)';
+  ctx.font = '9px JetBrains Mono';
+  ctx.fillText('VICINAL · 23h41 · sem cobertura de celular', 14, 14);
+}
+function drawConfrontoBG() {
+  // antessala da editoria — corredor escuro, fotos do deputado nas paredes, luz vermelha de "AO VIVO"
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#1a0d12'); g.addColorStop(.55,'#10080c'); g.addColorStop(1,'#080306');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  // distant chandelier silhouette
+  ctx.fillStyle = 'rgba(192,57,43,.04)';
+  ctx.fillRect(W/2-80, 30, 160, 4);
+  for (let i=0;i<7;i++){
+    const x = W/2 - 70 + i*22;
+    ctx.fillStyle = `rgba(212,160,23,${0.06 + Math.sin(performance.now()*0.001 + i)*0.03})`;
+    ctx.fillRect(x, 34, 3, 22);
+    ctx.beginPath(); ctx.arc(x+1.5, 60, 4, 0, Math.PI*2); ctx.fill();
+  }
+
+  // wall panels — wood paneling
+  for (let i=0;i<6;i++){
+    const x = i*160 + 20;
+    ctx.fillStyle = 'rgba(58,24,32,.5)';
+    ctx.fillRect(x, 110, 130, 240);
+    ctx.strokeStyle = 'rgba(100,40,52,.4)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x+0.5, 110.5, 130, 240);
+    // moulding
+    ctx.fillStyle = 'rgba(100,40,52,.5)';
+    ctx.fillRect(x, 108, 130, 2);
+    ctx.fillRect(x, 350, 130, 2);
+  }
+
+  // photos of deputy on the wall (small framed portraits)
+  for (let i=0;i<4;i++){
+    const x = 120 + i*220, y = 160;
+    // frame
+    ctx.fillStyle = '#3a2010';
+    ctx.fillRect(x-2, y-2, 64, 78);
+    // photo bg
+    ctx.fillStyle = '#1a1418';
+    ctx.fillRect(x, y, 60, 74);
+    // silhouette of deputy (slick suit, head)
+    ctx.fillStyle = 'rgba(232,227,208,.3)';
+    ctx.fillRect(x+22, y+10, 16, 18); // head
+    ctx.fillStyle = 'rgba(40,30,40,.85)';
+    ctx.fillRect(x+10, y+30, 40, 40); // suit
+    ctx.fillStyle = 'rgba(192,57,43,.7)';
+    ctx.fillRect(x+28, y+34, 4, 22);  // tie
+    // brass plate
+    ctx.fillStyle = 'rgba(212,160,23,.45)';
+    ctx.fillRect(x+8, y+72, 44, 4);
+  }
+
+  // red "AO VIVO" / "GABINETE" sign (subtle pulse)
+  const t = performance.now()*0.002;
+  const pulse = 0.6 + Math.sin(t)*0.4;
+  ctx.fillStyle = `rgba(192,57,43,${0.55*pulse})`;
+  ctx.font = 'bold 11px JetBrains Mono';
+  ctx.fillText('● GABINETE · CARLÃO DO PASTEL · ATENDIMENTO RESERVADO', 24, 18);
+
+  // floor light pool
+  const gr = ctx.createRadialGradient(W/2, 420, 30, W/2, 420, 280);
+  gr.addColorStop(0,'rgba(192,57,43,.18)');
+  gr.addColorStop(1,'rgba(192,57,43,0)');
+  ctx.fillStyle = gr; ctx.fillRect(0, 280, W, 200);
+
+  // a door silhouette in the back-right (the path to publicacao)
+  ctx.fillStyle = 'rgba(212,160,23,.08)';
+  ctx.fillRect(W-110, 250, 70, 130);
+  ctx.strokeStyle = 'rgba(212,160,23,.18)';
+  ctx.strokeRect(W-110+0.5, 250.5, 70, 130);
+  ctx.fillStyle = 'rgba(232,227,208,.32)';
+  ctx.font = '8px JetBrains Mono';
+  ctx.fillText('PUBLICAÇÃO →', W-104, 244);
+}
+function drawPublishBG() {
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#101428'); g.addColorStop(1,'#080a18');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // newsroom desks silhouette across the room
+  for (let i=0;i<6;i++){
+    const x = 50 + i*150;
+    ctx.fillStyle = 'rgba(60,80,120,.18)';
+    ctx.fillRect(x, 280, 80, 50);
+    ctx.fillStyle = 'rgba(212,160,23,.08)';
+    ctx.fillRect(x+10, 290, 18, 14);
+  }
+  // distant clock + label, away from HUD
+  ctx.fillStyle = 'rgba(212,160,23,.28)';
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillText('FECHAMENTO · 22:47', W-160, 270);
+  // light from the editor's lamp
+  const gr = ctx.createRadialGradient(W*0.55, 360, 30, W*0.55, 360, 240);
+  gr.addColorStop(0,'rgba(212,160,23,.18)');
+  gr.addColorStop(1,'rgba(212,160,23,0)');
+  ctx.fillStyle = gr; ctx.fillRect(0, 200, W, 260);
+}
+
+/* ---------- TILE / ENTITY DRAW ---------- */
+function drawTiles() {
+  const room = ROOMS[game.room];
+  const pal = room.palette;
+  for (let y=0;y<ROWS;y++) {
+    for (let x=0;x<COLS;x++) {
+      const ch = room.map[y][x];
+      if (ch === '#') {
+        ctx.fillStyle = pal.wall;
+        ctx.fillRect(x*TILE, y*TILE, TILE, TILE);
+        ctx.fillStyle = pal.accent;
+        ctx.fillRect(x*TILE, y*TILE, TILE, 3);
+        // brick lines
+        ctx.fillStyle = 'rgba(0,0,0,.3)';
+        if ((x+y)%2===0) ctx.fillRect(x*TILE+TILE/2, y*TILE+3, 1, TILE-3);
+        ctx.fillRect(x*TILE, y*TILE+TILE-1, TILE, 1);
+      }
+    }
+  }
+}
+
+function drawEntities() {
+  const room = ROOMS[game.room];
+  for (const e of room.entities) {
+    const ex = e.x*TILE, ey = e.y*TILE;
+    switch (e.type) {
+      case 'desk':
+        ctx.fillStyle = '#5a4a32';
+        ctx.fillRect(ex+2, ey+10, TILE-4, 18);
+        ctx.fillStyle = '#3a2f20';
+        ctx.fillRect(ex+4, ey+24, 4, 8);
+        ctx.fillRect(ex+TILE-8, ey+24, 4, 8);
+        // monitor
+        ctx.fillStyle = '#0a0e1a';
+        ctx.fillRect(ex+8, ey-2, TILE-16, 14);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(ex+10, ey, 2, 2);
+        ctx.fillRect(ex+14, ey+2, 8, 1);
+        break;
+      case 'shelf':
+        ctx.fillStyle = '#3a2818';
+        ctx.fillRect(ex-4, ey-32, TILE+8, 64);
+        for (let i=0;i<5;i++) {
+          ctx.fillStyle = ['#7a4a28','#5a3818','#8a5a32','#6a4020','#4a3018'][i%5];
+          ctx.fillRect(ex-2+i*7, ey-28, 6, 26);
+        }
+        ctx.fillStyle='#1a0e08';
+        ctx.fillRect(ex-4, ey-2, TILE+8, 2);
+        break;
+      case 'tree': {
+        ctx.fillStyle = '#1a0e08';
+        ctx.fillRect(ex+TILE/2-3, ey-26, 6, 28);
+        ctx.fillStyle = '#0e1a14';
+        ctx.beginPath(); ctx.arc(ex+TILE/2, ey-30, 18, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#152a20';
+        ctx.beginPath(); ctx.arc(ex+TILE/2-6, ey-34, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ex+TILE/2+8, ey-30, 10, 0, Math.PI*2); ctx.fill();
+        break;
+      }
+      case 'car': {
+        // hatch parado com farol fraco — ambiente de encontro com fonte
+        const t = performance.now()*0.001;
+        const flicker = 0.85 + Math.sin(t*7)*0.05;
+        // body
+        ctx.fillStyle = '#2a2a32';
+        ctx.fillRect(ex-18, ey+12, TILE+36, 14);
+        ctx.fillStyle = '#1a1a22';
+        ctx.fillRect(ex-22, ey+18, TILE+44, 8);
+        // roof
+        ctx.fillStyle = '#1f1f28';
+        ctx.fillRect(ex-8, ey+4, TILE+16, 10);
+        // windows
+        ctx.fillStyle = 'rgba(80,100,140,.4)';
+        ctx.fillRect(ex-6, ey+6, 12, 6);
+        ctx.fillRect(ex+TILE-6, ey+6, 12, 6);
+        // wheels
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(ex-14, ey+24, 8, 6);
+        ctx.fillRect(ex+TILE+6, ey+24, 8, 6);
+        // headlight cone (left side)
+        const gr = ctx.createRadialGradient(ex-22, ey+18, 4, ex-22, ey+18, 80);
+        gr.addColorStop(0, `rgba(255,235,180,${0.45*flicker})`);
+        gr.addColorStop(1, 'rgba(255,235,180,0)');
+        ctx.fillStyle = gr;
+        ctx.fillRect(ex-100, ey-30, 100, 80);
+        ctx.fillStyle = `rgba(255,240,200,${0.85*flicker})`;
+        ctx.fillRect(ex-23, ey+17, 3, 3);
+        break;
+      }
+      case 'clue': {
+        if (e._collected) break;
+        if (e.hidden && !game.abilities[e.hiddenBy]) break;
+        const t = performance.now()*0.005;
+        const yo = Math.sin(t)*3;
+        // glow
+        const gr = ctx.createRadialGradient(ex+TILE/2, ey+TILE/2+yo, 2, ex+TILE/2, ey+TILE/2+yo, 24);
+        gr.addColorStop(0,'rgba(212,160,23,.5)'); gr.addColorStop(1,'rgba(212,160,23,0)');
+        ctx.fillStyle = gr;
+        ctx.fillRect(ex-12, ey-12+yo, TILE+24, TILE+24);
+        // paper
+        ctx.fillStyle = '#e8e3d0';
+        ctx.fillRect(ex+8, ey+8+yo, 16, 18);
+        ctx.fillStyle = '#1a1a1a';
+        for (let i=0;i<4;i++) ctx.fillRect(ex+10, ey+11+i*4+yo, 12, 1);
+        ctx.fillStyle = '#d4a017';
+        ctx.fillRect(ex+8, ey+8+yo, 16, 2);
+        break;
+      }
+      case 'ability': {
+        if (game.abilities[e.key]) break;
+        const t = performance.now()*0.003;
+        const yo = Math.sin(t)*4;
+        const gr = ctx.createRadialGradient(ex+TILE/2, ey+TILE/2+yo, 2, ex+TILE/2, ey+TILE/2+yo, 40);
+        gr.addColorStop(0,'rgba(74,222,128,.5)'); gr.addColorStop(1,'rgba(74,222,128,0)');
+        ctx.fillStyle = gr;
+        ctx.fillRect(ex-20, ey-20, TILE+40, TILE+40);
+        if (e.key === 'cam') {
+          ctx.fillStyle = '#1a1a1a';
+          ctx.fillRect(ex+6, ey+10+yo, 20, 14);
+          ctx.fillStyle = '#0a0a0a';
+          ctx.beginPath(); ctx.arc(ex+16, ey+17+yo, 5, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#d4a017';
+          ctx.beginPath(); ctx.arc(ex+16, ey+17+yo, 3, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#ff5050';
+          ctx.fillRect(ex+22, ey+12+yo, 2, 2);
+        } else if (e.key === 'rec') {
+          ctx.fillStyle = '#222';
+          ctx.fillRect(ex+10, ey+8+yo, 12, 18);
+          ctx.fillStyle = '#444';
+          ctx.fillRect(ex+12, ey+10+yo, 8, 6);
+          ctx.fillStyle = '#d4a017';
+          ctx.fillRect(ex+12, ey+18+yo, 8, 1);
+          ctx.fillRect(ex+12, ey+21+yo, 8, 1);
+          ctx.fillStyle = '#ff3030';
+          ctx.fillRect(ex+18, ey+11+yo, 2, 2);
+        }
+        break;
+      }
+      case 'noisewall': {
+        if (e.broken) break;
+        const h = (e.h||1) * TILE;
+        ctx.fillStyle = 'rgba(212,160,23,.08)';
+        ctx.fillRect(ex, ey, TILE, h);
+        ctx.strokeStyle = 'rgba(212,160,23,.4)';
+        ctx.setLineDash([4,3]);
+        ctx.strokeRect(ex+1, ey+1, TILE-2, h-2);
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(212,160,23,.4)';
+        ctx.font = '8px JetBrains Mono';
+        ctx.save();
+        ctx.translate(ex+TILE/2-4, ey+12);
+        ctx.fillText('))) ', 0, 0);
+        ctx.restore();
+        break;
+      }
+      case 'door': {
+        const locked = e.locked && !(
+          (e.locked==='guard' && game.guardStunned>0) ||
+          (e.locked==='doc' && game.abilities.doc) ||
+          (e.locked==='boss' && game.boss && game.boss.defeated)
+        );
+        ctx.fillStyle = locked ? 'rgba(192,57,43,.18)' : 'rgba(212,160,23,.12)';
+        ctx.fillRect(ex, ey-TILE, TILE, TILE*2);
+        ctx.strokeStyle = locked ? 'rgba(192,57,43,.5)' : 'rgba(212,160,23,.55)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(ex+3, ey-TILE+3, TILE-6, TILE*2-6);
+        ctx.fillStyle = locked ? '#c0392b' : '#d4a017';
+        ctx.font = '8px JetBrains Mono';
+        ctx.fillText(locked ? 'BLOQ' : '→', ex+8, ey-2);
+        // E hint when near
+        const pr = playerBBox(game.player);
+        const dist = Math.abs((pr.l+pr.r)/2 - (ex+TILE/2));
+        if (dist < TILE*1.5) {
+          ctx.fillStyle = 'rgba(232,227,208,.85)';
+          ctx.font = '10px JetBrains Mono';
+          ctx.fillText('[E]', ex+8, ey-TILE-4);
+        }
+        break;
+      }
+      case 'finish': {
+        const t = performance.now()*0.003;
+        ctx.fillStyle = `rgba(212,160,23,${0.15+Math.sin(t)*0.05})`;
+        ctx.fillRect(ex-20, ey-TILE*2, TILE+40, TILE*3);
+        ctx.fillStyle = '#d4a017';
+        ctx.fillRect(ex+TILE/2-1, ey-TILE*2, 2, TILE*3);
+        ctx.font = '10px JetBrains Mono';
+        ctx.textAlign='center';
+        ctx.fillText('PUBLICAR', ex+TILE/2, ey-TILE*2-6);
+        ctx.textAlign='start';
+        break;
+      }
+      case 'enemy': {
+        if (e.defeated) break;
+        const ex0 = (e._x !== undefined ? e._x : e.x*TILE);
+        const ey0 = e.y*TILE;
+        const stunned = (e.stunned || 0) > 0;
+        const facing = (e._dir || 1);
+        const bob = Math.sin(e._anim || 0) * 1.2;
+        const isAssessor = e.kind === 'assessor';
+        // palette per enemy kind
+        const suitColor      = isAssessor ? '#3a1f4a' : '#1a1822';
+        const shoulderColor  = isAssessor ? '#552e6a' : '#2a2632';
+        const tieColor       = isAssessor ? '#a04a14' : '#7a1f1f';
+        const auraColor      = isAssessor ? '122,60,138' : '192,57,43';
+        const labelColor     = isAssessor ? 'rgba(168,90,200,.85)' : 'rgba(192,57,43,.7)';
+        const labelText      = isAssessor ? 'ASSESSOR' : (e.name || 'LOBISTA');
+        // shadow
+        ctx.fillStyle = 'rgba(0,0,0,.45)';
+        ctx.beginPath();
+        ctx.ellipse(ex0+TILE/2, ey0+TILE+1, TILE*0.42, 2.5, 0, 0, Math.PI*2);
+        ctx.fill();
+        // legs (alternating)
+        ctx.fillStyle = '#0a0a0a';
+        const stepO = stunned ? 0 : Math.floor((e._anim||0)*2)%2;
+        ctx.fillRect(ex0+9 + (stepO?0:1),  ey0+24, 4, 6);
+        ctx.fillRect(ex0+18 - (stepO?1:0), ey0+24, 4, 6);
+        // body (suit)
+        ctx.fillStyle = suitColor;
+        ctx.fillRect(ex0+7, ey0+12+bob, 18, 13);
+        // shoulder line
+        ctx.fillStyle = shoulderColor;
+        ctx.fillRect(ex0+7, ey0+12+bob, 18, 2);
+        // shirt + tie
+        ctx.fillStyle = '#e8e3d0';
+        ctx.fillRect(ex0+13, ey0+13+bob, 6, 4);
+        ctx.fillStyle = tieColor;
+        ctx.fillRect(ex0+15, ey0+14+bob, 2, 9);
+        // head
+        ctx.fillStyle = '#c89a78';
+        ctx.fillRect(ex0+10, ey0+3+bob, 12, 10);
+        // hair (slick back)
+        ctx.fillStyle = '#1a0e08';
+        ctx.fillRect(ex0+10, ey0+3+bob, 12, 3);
+        ctx.fillRect(ex0 + (facing>0 ? 20 : 10), ey0+5+bob, 2, 2);
+        // eyes
+        if (stunned) {
+          ctx.fillStyle = '#d4a017';
+          ctx.fillRect(ex0+12, ey0+8+bob, 3, 1);
+          ctx.fillRect(ex0+17, ey0+8+bob, 3, 1);
+        } else {
+          ctx.fillStyle = isAssessor ? '#a85ad8' : '#ff3030';
+          const eo = facing > 0 ? 1 : -1;
+          ctx.fillRect(ex0+13+eo, ey0+8+bob, 1, 2);
+          ctx.fillRect(ex0+18+eo, ey0+8+bob, 1, 2);
+          // angry brows
+          ctx.fillStyle = '#1a0e08';
+          ctx.fillRect(ex0+12, ey0+7+bob, 3, 1);
+          ctx.fillRect(ex0+17, ey0+7+bob, 3, 1);
+        }
+        // briefcase / clipboard
+        const bx = ex0 + (facing>0 ? 24 : 1);
+        if (isAssessor) {
+          // clipboard with paper
+          ctx.fillStyle = '#3a2810';
+          ctx.fillRect(bx, ey0+15+bob, 7, 10);
+          ctx.fillStyle = '#e8e3d0';
+          ctx.fillRect(bx+1, ey0+16+bob, 5, 7);
+          ctx.fillStyle = '#1a0e08';
+          for (let i=0;i<3;i++) ctx.fillRect(bx+2, ey0+18+i*2+bob, 3, 0.5);
+        } else {
+          ctx.fillStyle = '#3a2810';
+          ctx.fillRect(bx, ey0+16+bob, 7, 8);
+          ctx.fillStyle = '#1a1408';
+          ctx.fillRect(bx, ey0+15+bob, 7, 1);
+          ctx.fillStyle = '#d4a017';
+          ctx.fillRect(bx+3, ey0+15+bob, 1, 1);
+        }
+        // label
+        ctx.font = '8px JetBrains Mono';
+        ctx.fillStyle = stunned ? 'rgba(212,160,23,.85)' : labelColor;
+        ctx.fillText(stunned ? 'CEGO' : labelText, ex0+1, ey0-4);
+        // HP pips for assessor (3 small dots above)
+        if (isAssessor && (e._hp ?? e.hp ?? 1) > 1) {
+          const maxH = e.hp || 3;
+          const cur = Math.max(0, e._hp ?? maxH);
+          for (let i = 0; i < maxH; i++) {
+            ctx.fillStyle = i < cur ? '#a85ad8' : 'rgba(168,90,200,.18)';
+            ctx.fillRect(ex0+10 + i*4, ey0-10, 3, 2);
+          }
+        }
+        // angry aura
+        if (!stunned) {
+          const t = performance.now()*0.005;
+          ctx.strokeStyle = `rgba(${auraColor},${0.15+Math.sin(t)*0.08})`;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(ex0+5, ey0+1+bob, 22, 26);
+        }
+        break;
+      }
+      case 'boss': {
+        if (game.state === 'bossIntro' && game.bossIntro?.phase === 0) {
+          // already animated by intro state, but draw at current _x
+        }
+        const bx0 = (e._x !== undefined ? e._x : e.x*TILE);
+        const by0 = (e._y !== undefined ? e._y : e.y*TILE) - 16;     // boss is bigger, shifted up
+        const stunned = (e._stunned || 0) > 0;
+        const facing = (e._dir || -1);
+        const bob = Math.sin(e._anim || 0) * 1.6;
+        const fall = e._fall || 0;
+        const flicker = (e._invuln > 0) && (Math.floor(e._invuln/3) % 2 === 0);
+        if (flicker) break;
+        const tilt = e.defeated ? Math.PI * 0.5 * fall : 0;
+
+        ctx.save();
+        ctx.translate(bx0 + 18, by0 + 24 + bob + (e.defeated ? fall*8 : 0));
+        ctx.rotate(tilt);
+        ctx.translate(-(bx0 + 18), -(by0 + 24 + bob));
+
+        // shadow
+        ctx.fillStyle = 'rgba(0,0,0,.55)';
+        ctx.beginPath();
+        ctx.ellipse(bx0+18, by0+TILE+18, 24, 4, 0, 0, Math.PI*2);
+        ctx.fill();
+        // legs
+        ctx.fillStyle = '#0a0a0a';
+        const stepO = stunned || e.defeated ? 0 : Math.floor((e._anim||0)*2)%2;
+        ctx.fillRect(bx0+9  + (stepO?0:1), by0+38, 6, 10);
+        ctx.fillRect(bx0+22 - (stepO?1:0), by0+38, 6, 10);
+        // suit (charcoal)
+        ctx.fillStyle = '#1c1820';
+        ctx.fillRect(bx0+4, by0+18+bob, 30, 22);
+        ctx.fillStyle = '#2a2430';
+        ctx.fillRect(bx0+4, by0+18+bob, 30, 3);
+        // shirt + tie (deep red)
+        ctx.fillStyle = '#e8e3d0';
+        ctx.fillRect(bx0+14, by0+19+bob, 10, 5);
+        ctx.fillStyle = '#7a1414';
+        ctx.fillRect(bx0+17, by0+20+bob, 4, 16);
+        ctx.fillStyle = '#a01818';
+        ctx.fillRect(bx0+17, by0+34+bob, 4, 2);
+        // gold lapel pin
+        ctx.fillStyle = '#d4a017';
+        ctx.fillRect(bx0+11, by0+24+bob, 2, 2);
+        // head
+        ctx.fillStyle = '#d4a888';
+        ctx.fillRect(bx0+11, by0+5+bob, 16, 14);
+        // jowls
+        ctx.fillStyle = '#c89878';
+        ctx.fillRect(bx0+10, by0+14+bob, 18, 5);
+        // hair (slick back, gray streaks)
+        ctx.fillStyle = '#1a0e08';
+        ctx.fillRect(bx0+11, by0+5+bob, 16, 4);
+        ctx.fillStyle = '#5a4a3a';
+        ctx.fillRect(bx0+12, by0+6+bob, 4, 1);
+        ctx.fillRect(bx0+22, by0+6+bob, 4, 1);
+        // mustache
+        ctx.fillStyle = '#1a0e08';
+        ctx.fillRect(bx0+15, by0+15+bob, 8, 2);
+        // eyes
+        if (stunned) {
+          ctx.fillStyle = '#d4a017';
+          ctx.fillRect(bx0+14, by0+11+bob, 3, 1);
+          ctx.fillRect(bx0+21, by0+11+bob, 3, 1);
+        } else {
+          ctx.fillStyle = e._enraged ? '#ff3030' : '#7a1414';
+          const eo = facing > 0 ? 1 : -1;
+          ctx.fillRect(bx0+14+eo, by0+11+bob, 2, 2);
+          ctx.fillRect(bx0+22+eo, by0+11+bob, 2, 2);
+          // angry brows
+          ctx.fillStyle = '#1a0e08';
+          ctx.fillRect(bx0+13, by0+10+bob, 4, 1);
+          ctx.fillRect(bx0+21, by0+10+bob, 4, 1);
+        }
+        // briefcase (heavy, gold-clasped)
+        const bcx = bx0 + (facing>0 ? 32 : -2);
+        ctx.fillStyle = '#3a2010';
+        ctx.fillRect(bcx, by0+26+bob, 10, 12);
+        ctx.fillStyle = '#1a1008';
+        ctx.fillRect(bcx, by0+25+bob, 10, 2);
+        ctx.fillStyle = '#d4a017';
+        ctx.fillRect(bcx+3, by0+25+bob, 1, 1);
+        ctx.fillRect(bcx+6, by0+25+bob, 1, 1);
+        ctx.fillStyle = '#3a2010';
+        ctx.fillRect(bcx+3, by0+22+bob, 4, 4);
+        // gold watch on facing arm
+        ctx.fillStyle = '#d4a017';
+        ctx.fillRect(bx0 + (facing>0 ? 30 : 2), by0+30+bob, 2, 1);
+
+        ctx.restore();
+
+        // label (above)
+        if (!e.defeated) {
+          ctx.font = 'bold 9px JetBrains Mono';
+          ctx.fillStyle = e._enraged ? 'rgba(255,80,80,.95)' : 'rgba(192,57,43,.85)';
+          ctx.fillText(e._enraged ? 'ENFURECIDO' : 'CARLÃO', bx0+2, by0-6);
+          // pulsing angry aura
+          const t = performance.now()*0.006;
+          ctx.strokeStyle = `rgba(192,57,43,${0.25+Math.sin(t)*0.15})`;
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(bx0+2, by0+2+bob, 34, 42);
+        } else {
+          ctx.font = 'bold 9px JetBrains Mono';
+          ctx.fillStyle = 'rgba(212,160,23,.7)';
+          ctx.fillText('SE RETIRA', bx0+2, by0-6);
+        }
+        break;
+      }
+      case 'npc':
+      case 'guard': {
+        // body
+        const stunned = e.type === 'guard' && game.guardStunned > 0;
+        const skin = e.type === 'guard' ? '#c4a888' : '#d8b89c';
+        ctx.fillStyle = e.type === 'guard' ? '#1a2538' : '#3a3548';
+        ctx.fillRect(ex+8, ey+10, 16, 18);
+        ctx.fillStyle = skin;
+        ctx.fillRect(ex+11, ey+2, 10, 10); // head
+        ctx.fillStyle = '#1a1010';
+        ctx.fillRect(ex+11, ey+2, 10, 4); // hair
+        // eyes
+        if (stunned) {
+          ctx.fillStyle = '#d4a017';
+          ctx.fillRect(ex+12, ey+7, 3, 1); ctx.fillRect(ex+17, ey+7, 3, 1);
+        } else {
+          ctx.fillStyle = '#0a0a0a';
+          ctx.fillRect(ex+13, ey+7, 1, 1); ctx.fillRect(ex+18, ey+7, 1, 1);
+        }
+        // legs
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(ex+10, ey+26, 5, 6);
+        ctx.fillRect(ex+17, ey+26, 5, 6);
+        // chat indicator
+        const pr = playerBBox(game.player);
+        const dist = Math.abs((pr.l+pr.r)/2 - (ex+TILE/2));
+        if (dist < TILE*1.6) {
+          ctx.fillStyle = 'rgba(232,227,208,.75)';
+          ctx.font = '10px JetBrains Mono';
+          ctx.fillText('[E]', ex+9, ey-4);
+        }
+        if (e.type === 'guard') {
+          ctx.fillStyle = stunned ? 'rgba(212,160,23,.85)' : 'rgba(192,57,43,.7)';
+          ctx.font = '8px JetBrains Mono';
+          ctx.fillText(stunned ? 'CEGO' : 'GUARDA', ex+2, ey-4);
+        }
+        break;
+      }
+    }
+  }
+}
+
+/* ---------- PLAYER DRAW ---------- */
+function drawPlayer() {
+  const p = game.player;
+  // invulnerability flicker
+  if (p.invuln > 0 && Math.floor(p.invuln/4) % 2 === 0) return;
+  const px = Math.round(p.x), py = Math.round(p.y);
+  const walking = Math.abs(p.vx) > 0.4 && p.onGround;
+  const step = walking ? Math.floor(p.anim*4) % 2 : 0;
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,.4)';
+  ctx.beginPath();
+  ctx.ellipse(px+p.w/2, py+p.h+1, p.w*0.6, 3, 0, 0, Math.PI*2);
+  ctx.fill();
+  // legs
+  ctx.fillStyle = '#1a1f2e';
+  if (step===0) {
+    ctx.fillRect(px+2, py+22, 6, 6);
+    ctx.fillRect(px+10, py+22, 6, 6);
+  } else {
+    ctx.fillRect(px, py+22, 6, 6);
+    ctx.fillRect(px+12, py+22, 6, 6);
+  }
+  // body (jacket)
+  ctx.fillStyle = '#2a2f44';
+  ctx.fillRect(px+1, py+12, 16, 12);
+  // shirt collar
+  ctx.fillStyle = '#e8e3d0';
+  ctx.fillRect(px+7, py+12, 4, 4);
+  // notebook on hip
+  ctx.fillStyle = '#d4a017';
+  ctx.fillRect(px + (p.dir>0 ? 14 : 0), py+16, 4, 5);
+  // head
+  ctx.fillStyle = '#d8b89c';
+  ctx.fillRect(px+4, py+2, 10, 10);
+  // hair
+  ctx.fillStyle = '#1f1410';
+  ctx.fillRect(px+4, py+2, 10, 4);
+  ctx.fillRect(px + (p.dir>0?12:2), py+5, 2, 2);
+  // eye
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(px + (p.dir>0?11:5), py+8, 2, 1);
+  // glasses
+  ctx.strokeStyle = '#d4a017'; ctx.lineWidth = 1;
+  ctx.strokeRect(px + (p.dir>0?9:5)+0.5, py+7+0.5, 4, 3);
+
+  // flash overlay if firing camera
+  if (game.flashLight > 0.4) {
+    const cx = px+p.w/2, cy = py+p.h/2;
+    const gr = ctx.createRadialGradient(cx, cy, 4, cx, cy, 220*game.flashLight);
+    gr.addColorStop(0,`rgba(255,255,255,${game.flashLight*0.9})`);
+    gr.addColorStop(.4,`rgba(212,160,23,${game.flashLight*0.4})`);
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = gr;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // recorder pulse rings
+  if (game.recPulse > 0.05) {
+    const cx = px+p.w/2, cy = py+p.h/2;
+    ctx.strokeStyle = `rgba(212,160,23,${game.recPulse*0.7})`;
+    ctx.lineWidth = 2;
+    for (let i=0;i<3;i++){
+      const r = (1-game.recPulse)*120 + i*30;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+    }
+  }
+}
+
+function drawParticles() {
+  for (const p of game.particles) {
+    const a = Math.min(1, p.life/30);
+    const col = p.color === '#ffffff' ? `rgba(255,255,255,${a})` :
+      p.color === '#4ade80' ? `rgba(74,222,128,${a})` :
+      p.color === '#c0392b' ? `rgba(192,57,43,${a})` :
+      `rgba(212,160,23,${a})`;
+    ctx.fillStyle = col;
+    ctx.fillRect(p.x|0, p.y|0, 2, 2);
+  }
+}
+
+function drawProjectiles() {
+  for (const proj of game.projectiles) {
+    const a = Math.min(1, proj.life/30);
+    if (proj.weapon === 'ped') {
+      // arcing yellow envelope (PEDIDO FORMAL)
+      const rot = proj.age * 0.08 * proj.dir;
+      ctx.save();
+      ctx.translate(proj.x, proj.y);
+      ctx.rotate(rot);
+      // glow
+      const gr = ctx.createRadialGradient(0, 0, 1, 0, 0, 18);
+      gr.addColorStop(0, `rgba(255,235,140,${a*0.8})`);
+      gr.addColorStop(1, 'rgba(212,160,23,0)');
+      ctx.fillStyle = gr;
+      ctx.fillRect(-18, -18, 36, 36);
+      // envelope body
+      ctx.fillStyle = `rgba(232,227,208,${a})`;
+      ctx.fillRect(-7, -5, 14, 10);
+      // border
+      ctx.strokeStyle = `rgba(212,160,23,${a})`;
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(-7, -5, 14, 10);
+      // flap
+      ctx.beginPath();
+      ctx.moveTo(-7, -5);
+      ctx.lineTo(0, 1);
+      ctx.lineTo(7, -5);
+      ctx.stroke();
+      // wax seal
+      ctx.fillStyle = `rgba(192,57,43,${a})`;
+      ctx.beginPath();
+      ctx.arc(0, 1, 2, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+      // trail
+      for (let i = 1; i < 4; i++) {
+        const tx = proj.x - proj.vx*i*0.5;
+        const ty = proj.y - (proj.vy ?? 0)*i*0.5;
+        ctx.fillStyle = `rgba(212,160,23,${a*0.18/i})`;
+        ctx.fillRect(tx-2, ty-2, 4, 4);
+      }
+    } else {
+      // sound-wave rec
+      for (let i = 0; i < 3; i++) {
+        const r = 4 + (proj.age*0.6 + i*4) % 14;
+        ctx.strokeStyle = `rgba(212,160,23,${a*0.6/(i+1)})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(proj.x, proj.y, r, -Math.PI*0.4, Math.PI*0.4);
+        if (proj.dir < 0) ctx.arc(proj.x, proj.y, r, Math.PI*0.6, Math.PI*1.4);
+        ctx.stroke();
+      }
+      ctx.fillStyle = `rgba(255,240,180,${a})`;
+      ctx.fillRect(proj.x-2, proj.y-2, 4, 4);
+      ctx.fillStyle = `rgba(212,160,23,${a*0.3})`;
+      for (let i=1; i<5; i++) {
+        ctx.fillRect(proj.x - proj.vx*i*0.6 - 1, proj.y-1, 2, 2);
+      }
+    }
+  }
+}
+
+function drawBossProjectiles() {
+  for (const bp of game.bossProjectiles) {
+    const a = Math.min(1, bp.life/30);
+
+    if (bp.kind === 'discurso') {
+      const dir = Math.sign(bp.vx) || 1;
+      ctx.save();
+      ctx.translate(bp.x, bp.y);
+      ctx.rotate(bp.rot);
+      // shockwave body — yellow→red gradient
+      const lg = ctx.createLinearGradient(-22*dir, 0, 22*dir, 0);
+      lg.addColorStop(0,   'rgba(255,180,0,0)');
+      lg.addColorStop(0.5, `rgba(255,180,0,${a*0.55})`);
+      lg.addColorStop(1,   `rgba(255,80,0,${a*0.9})`);
+      ctx.fillStyle = lg;
+      ctx.fillRect(-22, -8, 44, 16);
+      // bright leading edge
+      ctx.fillStyle = `rgba(255,255,255,${a})`;
+      ctx.fillRect(18*dir, -6, 4, 12);
+      // soundwave bars
+      ctx.strokeStyle = `rgba(255,180,0,${a*0.9})`;
+      ctx.lineWidth = 1.5;
+      for (let k = -2; k <= 2; k++) {
+        ctx.beginPath();
+        ctx.moveTo(k*7, -4 - Math.abs(k)*0.6);
+        ctx.lineTo(k*7,  4 + Math.abs(k)*0.6);
+        ctx.stroke();
+      }
+      ctx.restore();
+      // trail
+      for (let i = 1; i < 4; i++) {
+        ctx.fillStyle = `rgba(255,180,0,${a*0.22/i})`;
+        ctx.fillRect(bp.x - bp.vx*i*0.5 - 3, bp.y - 4, 6, 8);
+      }
+      continue;
+    }
+
+    ctx.save();
+    ctx.translate(bp.x, bp.y);
+    ctx.rotate(bp.rot);
+    // glow
+    const gr = ctx.createRadialGradient(0, 0, 1, 0, 0, 16);
+    gr.addColorStop(0, `rgba(192,57,43,${a*0.7})`);
+    gr.addColorStop(1, 'rgba(192,57,43,0)');
+    ctx.fillStyle = gr;
+    ctx.fillRect(-16, -16, 32, 32);
+    // rolled paper (subpoena)
+    ctx.fillStyle = `rgba(232,227,208,${a})`;
+    ctx.fillRect(-10, -3, 20, 6);
+    ctx.strokeStyle = `rgba(192,57,43,${a})`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-10, -3, 20, 6);
+    // red stamp
+    ctx.fillStyle = `rgba(192,57,43,${a*0.85})`;
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${a*0.9})`;
+    ctx.font = 'bold 5px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText('§', 0, 1.6);
+    ctx.textAlign = 'start';
+    // ribbon ends
+    ctx.fillStyle = `rgba(232,227,208,${a*0.6})`;
+    ctx.fillRect(-12, -2, 2, 4);
+    ctx.fillRect( 10, -2, 2, 4);
+    ctx.restore();
+    // trail
+    for (let i = 1; i < 3; i++) {
+      ctx.fillStyle = `rgba(192,57,43,${a*0.18/i})`;
+      ctx.fillRect(bp.x - bp.vx*i*0.5 - 2, bp.y - bp.vy*i*0.5 - 2, 4, 4);
+    }
+  }
+}
+
+/* ---------- LIGHTING / ATMOSPHERE ---------- */
+function drawLighting() {
+  // soft vignette + warm edge
+  const gr = ctx.createRadialGradient(W/2, H/2, 200, W/2, H/2, 600);
+  gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,.55)');
+  ctx.fillStyle = gr;
+  ctx.fillRect(0,0,W,H);
+}
+
+/* ---------- RENDER ---------- */
+function drawChiefPulse() {
+  if (game.chiefPulse <= 0.05) return;
+  const t = 1 - game.chiefPulse;
+  const r = t * 360;
+  ctx.strokeStyle = `rgba(255,255,255,${game.chiefPulse*0.85})`;
+  ctx.lineWidth = 4 * game.chiefPulse + 1;
+  const cx = game.player.x + game.player.w/2;
+  const cy = game.player.y + game.player.h/2;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = `rgba(212,160,23,${game.chiefPulse*0.5})`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, r*0.7, 0, Math.PI*2); ctx.stroke();
+}
+
+function render() {
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if (game.shake > 0) {
+    const s = game.shake;
+    ctx.translate((Math.random()-0.5)*s, (Math.random()-0.5)*s);
+  }
+  ROOMS[game.room].bg();
+  drawTiles();
+  drawEntities();
+  drawPlayer();
+  drawProjectiles();
+  drawBossProjectiles();
+  drawChiefPulse();
+  drawParticles();
+  drawLighting();
+  ctx.restore();
+
+  // fade
+  if (game.fadeDir !== 0) {
+    if (game.fadeDir > 0) {
+      game.fadeAlpha += 0.06;
+      if (game.fadeAlpha >= 1) {
+        game.fadeAlpha = 1;
+        game._fadeFn && game._fadeFn();
+        game._fadeFn = null;
+        game.fadeDir = -1;
+      }
+    } else {
+      game.fadeAlpha -= 0.06;
+      if (game.fadeAlpha <= 0) { game.fadeAlpha = 0; game.fadeDir = 0; }
+    }
+  }
+  if (game.fadeAlpha > 0) {
+    ctx.fillStyle = `rgba(5,8,17,${game.fadeAlpha})`;
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+/* ---------- LOOP ---------- */
+let last = performance.now();
+function loop(t) {
+  const dt = Math.min(40, t-last);
+  last = t;
+  if (game.state === 'play') update(dt);
+  if (game.state === 'bossIntro') updateBossIntro();
+  if (game.state === 'bossDefeat') updateBossDefeat();
+  updateParticles();
+  render();
+  // clear single-frame
+  for (const k in pressed) pressed[k] = false;
+  // dialog input
+  if (game.state === 'dialog' && (keys[' '] || keys['e'])) {
+    if (!loop._dlgLock) {
+      advanceDialog();
+      loop._dlgLock = true;
+      setTimeout(()=>loop._dlgLock=false, 220);
+    }
+  }
+  // boss intro input
+  if (game.state === 'bossIntro' && game.bossIntro?.phase === 1 && (keys[' '] || keys['e'])) {
+    if (!loop._dlgLock) {
+      advanceBossIntro();
+      loop._dlgLock = true;
+      setTimeout(()=>loop._dlgLock=false, 220);
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ---------- FIRED ---------- */
+function firedGame() {
+  game.state = 'fired';
+  stopBossMusic();
+  document.getElementById('firedScreen').classList.remove('hidden');
+}
+
+/* ---------- END ---------- */
+function endGame() {
+  game.state = 'end';
+  SFX.win();
+  // Collect all clues across rooms (collected + missing) and sort by ord
+  const allClues = [];
+  for (const room of Object.values(ROOMS)) {
+    for (const e of room.entities) {
+      if (e.type === 'clue') allClues.push(e);
+    }
+  }
+  allClues.sort((a, b) => (a.ord || 99) - (b.ord || 99));
+
+  const collected = allClues.filter(c => c._collected).length;
+  const total = allClues.length;
+  document.getElementById('endStats').innerHTML =
+    `apuração — <b>${collected}/${total}</b> documentos · matéria reconstruída`;
+
+  const articleEl = document.getElementById('cluesRecap');
+  articleEl.innerHTML = '';
+  for (const c of allClues) {
+    const p = document.createElement('p');
+    p.className = 'art-p' + (c._collected ? '' : ' missing');
+    if (c._collected) {
+      p.innerHTML = `<span class="art-method">${c.method || 'documento'}</span>${c.article || c.text}`;
+    } else {
+      p.innerHTML = `<span class="art-method">${c.method || 'documento'} · não obtido</span><i>[parágrafo não apurado — pista não encontrada na sala correspondente]</i>`;
+    }
+    articleEl.appendChild(p);
+  }
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+
+/* ---------- WIRE UP ---------- */
+document.getElementById('startBtn').addEventListener('click', () => {
+  unlockAudio();  // synchronously inside the gesture — iOS demand
+  document.getElementById('titleScreen').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  game.player.hp = 3;
+  setRoom('redacao');
+  updateHearts();
+  document.getElementById('clueCount').textContent = `0/${game.totalClues}`;
+  game.state = 'play';
+  setMute(!soundOn);  // refresh button state
+});
+document.getElementById('replayBtn').addEventListener('click', () => location.reload());
+document.getElementById('firedRetry').addEventListener('click', () => location.reload());
+document.getElementById('muteBtn').addEventListener('click', () => {
+  unlockAudio();
+  setMute(soundOn);
+});
+setMute(!soundOn);  // sync button on load
+
+// Extra audio-unlock safety: any first touch/click anywhere unlocks too
+['touchstart', 'mousedown', 'keydown'].forEach(ev => {
+  window.addEventListener(ev, () => { unlockAudio(); }, { once:false, passive:true });
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
