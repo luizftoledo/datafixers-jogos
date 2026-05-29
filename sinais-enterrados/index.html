@@ -228,6 +228,35 @@
   .btn:hover { background:#d4a017; color:#050811; box-shadow:0 0 30px rgba(212,160,23,.4); }
   .btn + .btn { margin-left:14px; }
 
+  /* Difficulty selector (title screen) */
+  .difficulty { margin:4px 0 30px; }
+  .difficulty .diff-label {
+    font-size:10px; letter-spacing:.5em; text-transform:uppercase;
+    color:rgba(232,227,208,.5); margin-bottom:12px;
+  }
+  .difficulty .diff-btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .diff-btn {
+    background:transparent; cursor:pointer;
+    border:1px solid rgba(212,160,23,.35);
+    color:rgba(232,227,208,.7);
+    font-family:'JetBrains Mono', monospace;
+    padding:10px 16px; min-width:110px;
+    display:flex; flex-direction:column; gap:4px; align-items:center;
+    transition:all .18s;
+  }
+  .diff-btn b { font-size:12px; letter-spacing:.22em; color:#d4a017; }
+  .diff-btn span { font-size:10px; letter-spacing:.1em; color:rgba(232,227,208,.55); text-transform:uppercase; }
+  .diff-btn:hover { border-color:rgba(212,160,23,.7); background:rgba(212,160,23,.06); }
+  .diff-btn.selected {
+    border-color:#d4a017; background:rgba(212,160,23,.14);
+    box-shadow:0 0 18px rgba(212,160,23,.18) inset;
+  }
+  .diff-btn.selected b { text-shadow:0 0 10px rgba(212,160,23,.5); }
+  @media (max-width:480px) {
+    .diff-btn { min-width:90px; padding:8px 10px; }
+    .diff-btn b { font-size:11px; }
+  }
+
   /* Newspaper-style end paper */
   .end-paper {
     max-width:640px;
@@ -806,6 +835,14 @@
       <span><b>↑ / W</b> pular</span>
       <span><b>E</b> interagir</span>
       <span><b>Z X C</b> habilidades</span>
+    </div>
+    <div class="difficulty" id="difficulty">
+      <div class="diff-label">Dificuldade</div>
+      <div class="diff-btns">
+        <button type="button" class="diff-btn" data-diff="facil"><b>FÁCIL</b><span>6 vidas</span></button>
+        <button type="button" class="diff-btn selected" data-diff="normal"><b>NORMAL</b><span>3 vidas</span></button>
+        <button type="button" class="diff-btn" data-diff="dificil"><b>DIFÍCIL</b><span>1 dano = fim</span></button>
+      </div>
     </div>
     <button class="btn" id="startBtn">Começar a apuração</button>
     <a href="../index.html" style="margin-top:18px;font-size:10px;letter-spacing:.32em;color:rgba(232,227,208,.4);text-decoration:none;text-transform:uppercase;border-bottom:1px solid rgba(232,227,208,.15);padding-bottom:2px">← voltar ao portfólio</a>
@@ -1491,7 +1528,21 @@ const game = {
   boss: null,          // ref to boss entity in current room (or null)
   bossIntro: null,     // { phase, t, lineIdx, hpFilled, ... }
   bossBeaten: false,   // true depois que o deputado é derrotado (faixa-título retoma)
+  difficulty: 'normal',// facil (6 vidas) | normal (3) | dificil (1 dano = fim)
+  maxHp: 3,
 };
+
+/* ---------- DIFICULDADE ---------- */
+const DIFFICULTIES = { facil: 6, normal: 3, dificil: 1 };
+function setDifficulty(d) {
+  if (!(d in DIFFICULTIES)) d = 'normal';
+  game.difficulty = d;
+  game.maxHp = DIFFICULTIES[d];
+  try { localStorage.setItem('se-diff', d); } catch (e) {}
+  document.querySelectorAll('#difficulty .diff-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.diff === d);
+  });
+}
 
 /* count total clues across rooms */
 for (const r of Object.values(ROOMS)) {
@@ -1521,7 +1572,7 @@ function setRoom(name, spawnAt) {
   game.player.x = sp.x*TILE + (TILE-game.player.w)/2;
   game.player.y = sp.y*TILE + TILE - game.player.h - 1;
   game.player.vx = 0; game.player.vy = 0;
-  game.player.hp = 3;
+  game.player.hp = game.maxHp;
   game.player.invuln = 0;
   game.spawnPoint = { x: game.player.x, y: game.player.y };
 
@@ -1595,7 +1646,7 @@ function updateHearts() {
   const el = document.getElementById('hearts');
   if (!el) return;
   let html = '';
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < game.maxHp; i++) {
     html += `<span class="${i < game.player.hp ? 'on' : ''}">♥</span>`;
   }
   el.innerHTML = html;
@@ -3430,7 +3481,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
   unlockAudio();  // synchronously inside the gesture — iOS demand
   document.getElementById('titleScreen').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
-  game.player.hp = 3;
+  game.player.hp = game.maxHp;
   setRoom('redacao');          // já troca pra trilha "durante o jogo"
   updateHearts();
   document.getElementById('clueCount').textContent = `0/${game.totalClues}`;
@@ -3638,6 +3689,16 @@ function closeInfoCard() {
   _activeInfo = null;
   game.state = 'play';
 }
+
+/* ---------- DIFICULDADE (tela inicial) ---------- */
+document.querySelectorAll('#difficulty .diff-btn').forEach(b => {
+  b.addEventListener('click', () => { unlockAudio(); setDifficulty(b.dataset.diff); });
+});
+(function () {
+  let saved = 'normal';
+  try { const s = localStorage.getItem('se-diff'); if (s && s in DIFFICULTIES) saved = s; } catch (e) {}
+  setDifficulty(saved);
+})();
 
 /* ---------- INIT ÁUDIO ---------- */
 setMute(!soundOn);        // sincroniza botões e estado de mute na carga
