@@ -610,6 +610,125 @@
     font-size:9px;
     opacity:.7;
   }
+
+  /* ===== Controle de áudio persistente (título + jogo) ===== */
+  #audioBtn {
+    position:absolute; top:12px; right:12px; z-index:120;
+    width:34px; height:34px; line-height:1;
+    background:rgba(5,8,17,.82); border:1px solid rgba(212,160,23,.5);
+    color:#d4a017; font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter:blur(2px);
+    transition:background .15s, box-shadow .15s, color .15s, border-color .15s;
+  }
+  #audioBtn:hover { background:rgba(212,160,23,.18); }
+  #audioBtn.muted { color:rgba(232,227,208,.5); border-color:rgba(232,227,208,.2); }
+  #audioPanel {
+    position:absolute; top:52px; right:12px; z-index:121;
+    background:rgba(5,8,17,.97); border:1px solid #d4a017;
+    padding:12px 14px; min-width:212px; display:none;
+    box-shadow:0 10px 36px rgba(0,0,0,.7), 0 0 26px rgba(212,160,23,.14);
+  }
+  #audioPanel.show { display:block; }
+  #audioPanel .ap-title {
+    font-size:9px; letter-spacing:.34em; color:#d4a017;
+    text-transform:uppercase; margin-bottom:10px;
+  }
+  #audioPanel .ap-row { display:flex; align-items:center; gap:10px; }
+  #audioPanel .ap-mute {
+    flex:0 0 auto; width:34px; height:34px;
+    background:rgba(5,8,17,.7); border:1px solid rgba(212,160,23,.5);
+    color:#d4a017; font-size:15px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #audioPanel .ap-mute.muted { color:#c0392b; border-color:#c0392b; }
+  #audioPanel input[type=range] { flex:1; accent-color:#d4a017; height:4px; cursor:pointer; }
+  #audioPanel .ap-val {
+    flex:0 0 auto; font-size:11px; color:#e8e3d0;
+    min-width:36px; text-align:right; letter-spacing:.1em;
+  }
+  .hud-right { margin-right:42px; }
+  @media (orientation:portrait) and (max-width:720px) {
+    #audioBtn { top:8px; right:8px; }
+    #audioPanel { top:46px; right:8px; }
+  }
+
+  /* ===== Dica de volume (tela inicial) ===== */
+  #audioHint {
+    position:absolute; top:54px; right:12px; z-index:122;
+    background:rgba(5,8,17,.98); border:1px solid #d4a017;
+    padding:10px 14px 10px 14px; max-width:230px;
+    font-size:12px; line-height:1.45; color:#e8e3d0; text-align:right;
+    box-shadow:0 8px 28px rgba(0,0,0,.6), 0 0 22px rgba(212,160,23,.18);
+    display:none;
+  }
+  #audioHint.show { display:block; animation:hintPop .25s ease-out; }
+  #audioHint b { color:#d4a017; }
+  #audioHint::before {
+    content:''; position:absolute; top:-9px; right:13px;
+    border:5px solid transparent; border-bottom-color:#d4a017;
+  }
+  #audioHint .hint-x {
+    position:absolute; top:2px; right:7px; cursor:pointer;
+    color:rgba(232,227,208,.6); font-size:14px; line-height:1;
+  }
+  #audioHint .hint-x:hover { color:#e8e3d0; }
+  @keyframes hintPop {
+    from { transform:translateY(-8px); opacity:0; }
+    to   { transform:translateY(0); opacity:1; }
+  }
+  @keyframes seAttention {
+    0%,100% { box-shadow:0 0 0 0 rgba(212,160,23,.7); }
+    50%     { box-shadow:0 0 0 12px rgba(212,160,23,0); }
+  }
+  .attention-pulse { animation:seAttention 1.25s ease-out infinite; border-color:#d4a017 !important; }
+
+  /* ===== Tutorial overlay com spotlight ===== */
+  #tutorialOverlay { position:fixed; inset:0; z-index:9000; display:none; }
+  #tutorialOverlay.show { display:block; }
+  #tutorialSpotlight {
+    position:fixed; border-radius:4px;
+    box-shadow:0 0 0 9999px rgba(3,5,12,.82);
+    z-index:9001; pointer-events:none;
+    transition:top .3s ease, left .3s ease, width .3s ease, height .3s ease;
+    outline:2px solid #d4a017; outline-offset:2px;
+  }
+  #tutorialSpotlight.no-spot {
+    top:0; left:0; width:100vw; height:100vh; border-radius:0;
+    box-shadow:none; background:rgba(3,5,12,.86); outline:none;
+  }
+  #tutorialBox {
+    position:fixed; z-index:9002;
+    background:rgba(5,8,17,.98); border:1px solid #d4a017;
+    padding:16px 18px; max-width:340px; width:calc(100vw - 32px);
+    box-shadow:0 12px 40px rgba(0,0,0,.7), 0 0 30px rgba(212,160,23,.12);
+    color:#e8e3d0; pointer-events:auto;
+  }
+  #tutorialBox h3 {
+    font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:.26em;
+    color:#d4a017; text-transform:uppercase; margin:0 0 10px;
+  }
+  #tutorialBox p {
+    font-family:'Special Elite', monospace; font-size:14px; line-height:1.55; margin:0 0 14px;
+  }
+  #tutorialBox b { color:#d4a017; }
+  #tutorialBox .tut-buttons {
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+  }
+  #tutorialBox .tut-step-counter {
+    font-size:10px; letter-spacing:.2em; color:rgba(232,227,208,.5); text-transform:uppercase;
+  }
+  #tutorialBox button {
+    font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:.18em;
+    text-transform:uppercase; padding:9px 14px; cursor:pointer; background:transparent;
+  }
+  #tutorialBox .tut-skip { border:1px solid rgba(232,227,208,.3); color:rgba(232,227,208,.6); }
+  #tutorialBox .tut-skip:hover { color:#e8e3d0; }
+  #tutorialBox .tut-next { border:1px solid #d4a017; color:#050811; background:#d4a017; }
+  #tutorialBox .tut-next:hover { box-shadow:0 0 18px rgba(212,160,23,.45); }
+  @media (orientation:portrait) and (max-width:720px) {
+    #tutorialBox { max-width:none; }
+  }
 </style>
 </head>
 <body>
@@ -619,6 +738,21 @@
   <canvas id="game" width="960" height="544"></canvas>
   <div class="scan"></div>
   <div class="grain"></div>
+
+  <!-- AUDIO CONTROLS (persistente — visível no título e no jogo) -->
+  <button id="audioBtn" aria-label="som e volume" title="som / volume">🔊</button>
+  <div id="audioPanel" role="dialog" aria-label="ajustes de som">
+    <div class="ap-title">Som · Volume</div>
+    <div class="ap-row">
+      <button id="muteTgl" class="ap-mute" aria-label="ligar ou desligar o som">🔊</button>
+      <input type="range" id="volSlider" min="0" max="100" value="55" aria-label="volume da música" />
+      <span class="ap-val" id="volVal">55%</span>
+    </div>
+  </div>
+  <div id="audioHint" role="note">
+    <span class="hint-x" id="audioHintClose" aria-label="fechar dica">×</span>
+    <b>↑ Som e volume</b><br>ajuste a música aqui quando quiser
+  </div>
 
   <div class="hud hidden" id="hud">
     <div class="hud-left">
@@ -631,7 +765,6 @@
       <div class="ability" id="abRec"><span class="key">X</span>GRAVADOR</div>
       <div class="ability" id="abPed"><span class="key">C</span>PEDIDO</div>
       <div class="ability" id="abChief"><span class="key">V</span>EDITORA</div>
-      <button class="chip mute-btn" id="muteBtn" aria-label="alternar som" title="som on/off">🔊</button>
     </div>
   </div>
 
@@ -737,6 +870,12 @@
   </div>
 </div>
 </div><!-- /shell -->
+
+<!-- TUTORIAL / EXPLICAÇÕES -->
+<div id="tutorialOverlay">
+  <div id="tutorialSpotlight" class="no-spot"></div>
+  <div id="tutorialBox"></div>
+</div>
 
 <script>
 /* ============================================================
@@ -880,55 +1019,100 @@ const SFX = {
 function setMute(m) {
   soundOn = !m;
   try { localStorage.setItem('se-mute', m ? '1' : '0'); } catch(e){}
-  const btn = document.getElementById('muteBtn');
-  if (btn) {
-    btn.textContent = soundOn ? '🔊' : '🔈';
-    btn.classList.toggle('muted', !soundOn);
-  }
-  if (!soundOn) stopBossMusic();
+  Music.setMuted(m);
+  if (!m) Music.retry();
+  if (typeof syncAudioUI === 'function') syncAudioUI();
 }
 
-/* ---------- BOSS MUSIC (procedural suspense/adventure loop) ---------- */
-let bossMusic = null;
-function startBossMusic() {
-  if (!soundOn) return;
-  if (bossMusic) return;
-  const ctx = ensureAudio(); if (!ctx) return;
-  // 8-step ostinato in D minor — pulsing bass + dissonant stabs + melodic adventure line
-  let step = 0;
-  const pattern = [
-    { bass: 73.4,  stab: null,  lead: 587.3 }, // D2,                 D5
-    { bass: 73.4,  stab: null,  lead: null  },
-    { bass: 73.4,  stab: 277.2, lead: 698.5 }, // C#5 stab,            F5
-    { bass: 87.3,  stab: null,  lead: 659.3 }, // F2,                  E5
-    { bass: 73.4,  stab: null,  lead: 587.3 },
-    { bass: 73.4,  stab: 311.1, lead: null  }, // D#5 stab
-    { bass: 98.0,  stab: null,  lead: 523.3 }, // G2,                  C5
-    { bass: 65.4,  stab: 207.7, lead: 493.9 }, // C2 + Ab4,            B4
-  ];
-  const stepMs = 360;
-  bossMusic = setInterval(() => {
-    if (!soundOn) { stopBossMusic(); return; }
-    const s = pattern[step % pattern.length];
-    // pulsing bass — heartbeat under tension
-    tone(s.bass, 0.32, 'triangle', 0.05, s.bass * 0.94);
-    // dissonant stab — suspense
-    if (s.stab) {
-      setTimeout(()=>tone(s.stab, 0.22, 'sawtooth', 0.035, s.stab * 0.85), 60);
+/* ---------- MUSIC (faixas MP3 com fade + volume) ----------
+   título  → tela inicial e retomada pós-boss
+   game    → durante as salas de apuração (contínua)
+   boss    → confronto (entra só quando a barra de vida enche) */
+const Music = (function () {
+  const BASE = 'music/';
+  const TRACKS = { title: BASE + 'titulo.mp3', game: BASE + 'durante.mp3', boss: BASE + 'boss.mp3' };
+  const FADE_MS = 700;
+  let TARGET_VOL = 0.55;
+  try { const v = parseFloat(localStorage.getItem('se-vol')); if (!isNaN(v)) TARGET_VOL = Math.max(0, Math.min(1, v)); } catch (e) {}
+  let current = null;   // { key, audio, _raf }
+  let muted = false;
+  const _pre = {};
+
+  function _cancelFade(slot) { if (slot && slot._raf) { cancelAnimationFrame(slot._raf); slot._raf = null; } }
+  function _fade(slot, to, ms, onDone) {
+    _cancelFade(slot);
+    const a = slot.audio, from = a.volume;
+    if (ms <= 0) { a.volume = to; onDone && onDone(); return; }
+    const t0 = performance.now();
+    (function step(now) {
+      const t = Math.min(1, (now - t0) / ms);
+      a.volume = Math.max(0, Math.min(1, from + (to - from) * t));
+      if (t < 1) slot._raf = requestAnimationFrame(step);
+      else { slot._raf = null; onDone && onDone(); }
+    })(performance.now());
+  }
+  function preload(key) {
+    if (_pre[key] || !TRACKS[key]) return;
+    const a = new Audio(); a.preload = 'auto'; a.src = TRACKS[key]; a.loop = true;
+    try { a.load(); } catch (e) {}
+    _pre[key] = a;
+  }
+  function preloadAll() { Object.keys(TRACKS).forEach(preload); }
+
+  function play(key) {
+    if (!TRACKS[key]) return;
+    if (current && current.key === key) {
+      // já é esta faixa — garante que está tocando (caso o autoplay estivesse travado)
+      if (current.audio.paused) { const p = current.audio.play(); if (p && p.catch) p.catch(() => {}); }
+      return;
     }
-    // melodic lead — adventure motif
-    if (s.lead) {
-      setTimeout(()=>tone(s.lead, 0.18, 'triangle', 0.028, s.lead * 1.02), 120);
+    const audio = new Audio();
+    audio.src = TRACKS[key]; audio.loop = true; audio.preload = 'auto'; audio.volume = 0;
+    try { audio.load(); } catch (e) {}
+    const slot = { key, audio, _raf: null };
+    const tryPlay = () => {
+      const p = audio.play();
+      if (p && p.catch) p.catch(() => { if (typeof showVolumeHint === 'function') showVolumeHint(); });
+    };
+    tryPlay();
+    audio.addEventListener('canplay', () => { if (audio.paused && current === slot) tryPlay(); }, { once: true });
+    _fade(slot, muted ? 0 : TARGET_VOL, FADE_MS);
+    if (current) {
+      const prev = current;
+      _fade(prev, 0, FADE_MS, () => { try { prev.audio.pause(); prev.audio.src = ''; } catch (e) {} });
     }
-    // distant rumble on beat 1
-    if (step % pattern.length === 0) {
-      setTimeout(()=>noise(0.08, 0.018), 180);
-    }
-    step++;
-  }, stepMs);
-}
-function stopBossMusic() {
-  if (bossMusic) { clearInterval(bossMusic); bossMusic = null; }
+    current = slot;
+  }
+  function stop() {
+    if (!current) return;
+    const prev = current; current = null;
+    _fade(prev, 0, FADE_MS, () => { try { prev.audio.pause(); prev.audio.src = ''; } catch (e) {} });
+  }
+  function setMuted(m) { muted = m; if (current) _fade(current, m ? 0 : TARGET_VOL, 200); }
+  function setVolume(v) {
+    v = Math.max(0, Math.min(1, v)); TARGET_VOL = v;
+    try { localStorage.setItem('se-vol', String(v)); } catch (e) {}
+    if (current && !muted) _fade(current, v, 120);
+  }
+  function getVolume() { return TARGET_VOL; }
+  function retry() { if (current && current.audio.paused) { const p = current.audio.play(); if (p && p.catch) p.catch(() => {}); } }
+  function currentKey() { return current ? current.key : null; }
+  return { play, stop, setMuted, setVolume, getVolume, retry, preload, preloadAll, currentKey };
+})();
+
+/* Wrappers mantidos pelos call-sites do boss */
+function startBossMusic() { if (soundOn) Music.play('boss'); }
+function stopBossMusic() { Music.stop(); }
+
+/* Decide a faixa certa para a sala atual (chamada ao entrar em cada sala) */
+function updateMusicForRoom() {
+  const room = ROOMS[game.room];
+  if (room.isBoss && !(game.boss && game.boss.defeated)) {
+    // silêncio: o confronto começa a tocar só quando a barra de vida enche
+    Music.stop();
+    return;
+  }
+  Music.play(game.bossBeaten ? 'title' : 'game');
 }
 
 /* ---------- INPUT ---------- */
@@ -1306,6 +1490,7 @@ const game = {
   pendingRoom: null,
   boss: null,          // ref to boss entity in current room (or null)
   bossIntro: null,     // { phase, t, lineIdx, hpFilled, ... }
+  bossBeaten: false,   // true depois que o deputado é derrotado (faixa-título retoma)
 };
 
 /* count total clues across rooms */
@@ -1357,7 +1542,6 @@ function setRoom(name, spawnAt) {
   game.boss = null;
   game.bossIntro = null;
   game.bossDefeat = null;
-  stopBossMusic();
   hideBossUI();
   if (room.isBoss) {
     const bossEnt = room.entities.find(e => e.type === 'boss');
@@ -1401,6 +1585,10 @@ function setRoom(name, spawnAt) {
       setTimeout(()=>t.classList.remove('danger'), 2600);
     }, 600);
   }
+
+  // trilha sonora da sala + explicação de novidades (1ª visita)
+  updateMusicForRoom();
+  maybeShowRoomIntro(name);
 }
 
 function updateHearts() {
@@ -2009,7 +2197,8 @@ function updateBossIntro() {
       game.state = 'play';
       game.bossIntro = null;
       toast('+ pedido formal [c] · + editora-chefe [v] (2x)');
-      startBossMusic();
+      startBossMusic();        // a barra encheu — a trilha do confronto entra agora
+      showBossTips();          // explica as ferramentas novas do confronto
     }
   }
 }
@@ -2227,6 +2416,7 @@ function updateBossProjectiles() {
 
 function onBossDefeated() {
   game.boss.defeated = true;
+  game.bossBeaten = true;
   game.boss._fall = 0;
   game.bossProjectiles.length = 0;
   // clear remaining assessores
@@ -2251,6 +2441,7 @@ function updateBossDefeat() {
     document.getElementById('bossHp').classList.remove('show');
   }
   if (game.bossDefeat.t === 70) {
+    Music.play('title');   // boss caiu — retoma a faixa-título
     openDialog('EDITOR · NA VOZ DA REDAÇÃO', [
       'Toledo. Falou com o gabinete? Beleza.',
       'Pediu manifestação por escrito, registrou tudo. Outro lado: feito.',
@@ -3240,24 +3431,219 @@ document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('titleScreen').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
   game.player.hp = 3;
-  setRoom('redacao');
+  setRoom('redacao');          // já troca pra trilha "durante o jogo"
   updateHearts();
   document.getElementById('clueCount').textContent = `0/${game.totalClues}`;
   game.state = 'play';
-  setMute(!soundOn);  // refresh button state
+  setMute(!soundOn);           // refresh estado dos botões de som
+  dismissVolumeHint();
+  document.getElementById('audioPanel').classList.remove('show');
+  Music.preloadAll();
+  startTutorial();             // tour de boas-vindas (estilo "10 dias")
 });
 document.getElementById('replayBtn').addEventListener('click', () => location.reload());
 document.getElementById('firedRetry').addEventListener('click', () => location.reload());
-document.getElementById('muteBtn').addEventListener('click', () => {
-  unlockAudio();
-  setMute(soundOn);
-});
-setMute(!soundOn);  // sync button on load
 
 // Extra audio-unlock safety: any first touch/click anywhere unlocks too
 ['touchstart', 'mousedown', 'keydown'].forEach(ev => {
-  window.addEventListener(ev, () => { unlockAudio(); }, { once:false, passive:true });
+  window.addEventListener(ev, () => { unlockAudio(); Music.retry(); }, { once:false, passive:true });
 });
+
+/* ============================================================
+   ÁUDIO UI · TUTORIAL · EXPLICAÇÕES DE TELA
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Controles de áudio (botão + painel de volume) ---------- */
+const audioBtn   = $('audioBtn');
+const audioPanel = $('audioPanel');
+const muteTgl    = $('muteTgl');
+const volSlider  = $('volSlider');
+const volVal     = $('volVal');
+
+function syncAudioUI() {
+  const pct = Math.round(Music.getVolume() * 100);
+  if (audioBtn) { audioBtn.textContent = soundOn ? '🔊' : '🔈'; audioBtn.classList.toggle('muted', !soundOn); }
+  if (muteTgl)  { muteTgl.textContent  = soundOn ? '🔊' : '🔈'; muteTgl.classList.toggle('muted', !soundOn); }
+  if (volSlider) volSlider.value = pct;
+  if (volVal) volVal.textContent = pct + '%';
+}
+
+audioBtn.addEventListener('click', (e) => {
+  unlockAudio(); Music.retry();
+  audioPanel.classList.toggle('show');
+  syncAudioUI();
+  dismissVolumeHint();
+  e.stopPropagation();
+});
+document.addEventListener('click', (e) => {
+  if (!audioPanel.classList.contains('show')) return;
+  if (audioPanel.contains(e.target) || e.target === audioBtn) return;
+  audioPanel.classList.remove('show');
+});
+muteTgl.addEventListener('click', () => { unlockAudio(); setMute(soundOn); });
+volSlider.addEventListener('input', () => {
+  const pct = parseInt(volSlider.value, 10);
+  Music.setVolume(pct / 100);
+  if (volVal) volVal.textContent = pct + '%';
+  if (!soundOn && pct > 0) setMute(false);  // mexeu no volume estando mudo → desmuta
+  unlockAudio(); Music.retry();
+});
+
+/* ---------- Dica de volume (tela inicial) ---------- */
+let _volHintShown = false;
+function showVolumeHint() {
+  if (_volHintShown) return; _volHintShown = true;
+  const h = $('audioHint'); if (h) h.classList.add('show');
+  if (audioBtn) audioBtn.classList.add('attention-pulse');
+}
+function dismissVolumeHint() {
+  const h = $('audioHint'); if (h) h.classList.remove('show');
+  if (audioBtn) audioBtn.classList.remove('attention-pulse');
+}
+const _ahClose = $('audioHintClose');
+if (_ahClose) _ahClose.addEventListener('click', dismissVolumeHint);
+
+/* ---------- TUTORIAL (overlay com spotlight, estilo "10 dias") ---------- */
+const TUTORIAL_STEPS = [
+  { target: null, title: 'BEM-VINDO À APURAÇÃO',
+    text: 'Você é um <b>repórter investigativo</b>. Vamos ver rapidinho como se joga antes de começar.' },
+  { target: null, title: 'COMO ANDAR',
+    text: 'Mexa com <b>← →</b> e pule com <b>↑ / W / espaço</b>. No celular, use os botões na parte de baixo da tela.' },
+  { target: null, title: 'INTERAGIR',
+    text: 'Chegue perto de <b>pessoas</b> e <b>portas</b> e aperte <b>E</b> (ou o botão <b>E · INTERAGIR</b>) pra conversar e passar de sala.' },
+  { target: '.hud-left', title: 'SEU PAINEL',
+    text: 'Aqui ficam a <b>sala atual</b>, as <b>PISTAS</b> que você já juntou e suas <b>vidas ♥</b>. Encostar num lobista tira uma vida.' },
+  { target: '.hud-right', title: 'SUAS FERRAMENTAS',
+    text: 'Estas são suas habilidades de jornalista. Começam <b>trancadas 🔒</b> e abrem conforme você acha os equipamentos nas salas (câmera, gravador…).' },
+  { target: '#audioBtn', title: 'SOM E VOLUME',
+    text: 'Toque aqui pra <b>ligar/desligar</b> o som e ajustar o <b>volume</b> da música — a qualquer momento, mesmo no meio do jogo.' },
+  { target: null, title: 'SEU OBJETIVO',
+    text: 'Junte as provas em cada sala, fuja dos lobistas, encare o deputado e <b>publique a matéria</b>. Boa apuração.' },
+];
+let _tutStep = 0;
+
+function startTutorial() {
+  _tutStep = 0;
+  game.state = 'tutorial';
+  $('tutorialOverlay').classList.add('show');
+  showTutorialStep(_tutStep);
+}
+function showTutorialStep(idx) {
+  const step = TUTORIAL_STEPS[idx];
+  if (!step) return endTutorial();
+  const spot = $('tutorialSpotlight');
+  const box = $('tutorialBox');
+  const isLast = idx === TUTORIAL_STEPS.length - 1;
+  box.innerHTML =
+    '<h3>' + step.title + '</h3>' +
+    '<p>' + step.text + '</p>' +
+    '<div class="tut-buttons">' +
+      '<button type="button" class="tut-skip" id="tutSkipBtn">PULAR</button>' +
+      '<span class="tut-step-counter">' + (idx + 1) + '/' + TUTORIAL_STEPS.length + '</span>' +
+      '<button type="button" class="tut-next" id="tutNextBtn">' + (isLast ? 'COMEÇAR' : 'PRÓXIMO') + '</button>' +
+    '</div>';
+  $('tutSkipBtn').addEventListener('click', endTutorial);
+  $('tutNextBtn').addEventListener('click', nextTutorialStep);
+
+  if (step.target) {
+    const elx = document.querySelector(step.target);
+    if (elx && elx.offsetParent !== null && getComputedStyle(elx).display !== 'none') {
+      const rect = elx.getBoundingClientRect();
+      const pad = 8;
+      spot.classList.remove('no-spot'); spot.style.background = '';
+      spot.style.top = Math.max(0, rect.top - pad) + 'px';
+      spot.style.left = Math.max(0, rect.left - pad) + 'px';
+      spot.style.width = (rect.width + pad * 2) + 'px';
+      spot.style.height = (rect.height + pad * 2) + 'px';
+      positionTutBox(box, rect);
+      return;
+    }
+  }
+  // sem alvo (ou alvo invisível) → tela escura + caixa no centro
+  spot.classList.add('no-spot');
+  box.style.top = '50%'; box.style.left = '50%'; box.style.right = 'auto';
+  box.style.transform = 'translate(-50%, -50%)';
+}
+function positionTutBox(box, rect) {
+  box.style.transform = '';
+  const boxW = 340, boxH = 200, margin = 16;
+  let top;
+  if (rect.bottom + margin + boxH < window.innerHeight) top = rect.bottom + margin;
+  else if (rect.top - margin - boxH > 0) top = rect.top - margin - boxH;
+  else top = Math.max(8, window.innerHeight - boxH - 8);
+  const left = Math.max(8, Math.min(window.innerWidth - boxW - 8, rect.left + rect.width / 2 - boxW / 2));
+  box.style.top = top + 'px';
+  box.style.left = left + 'px';
+  box.style.right = 'auto';
+}
+function nextTutorialStep() {
+  _tutStep++;
+  if (_tutStep >= TUTORIAL_STEPS.length) endTutorial();
+  else showTutorialStep(_tutStep);
+}
+function endTutorial() {
+  $('tutorialOverlay').classList.remove('show');
+  if (game.state === 'tutorial') game.state = 'play';
+}
+window.addEventListener('resize', () => {
+  if ($('tutorialOverlay').classList.contains('show') && _activeInfo === null) showTutorialStep(_tutStep);
+});
+
+/* ---------- EXPLICAÇÕES DE TELAS NOVAS (novidades por sala) ---------- */
+const ROOM_INTROS = {
+  arquivo: { title: 'NOVO · ARQUIVO PÚBLICO',
+    text: 'Aqui começam a aparecer os <b>LOBISTAS</b>. Encostar neles tira uma <b>vida ♥</b> — desvie, pule por cima ou passe rápido. E olho vivo: há uma <b>ferramenta nova</b> escondida nesta sala pra você pegar.' },
+  forum: { title: 'NOVO · TFA',
+    text: 'Um <b>SEGURANÇA</b> tranca a porta de saída. Use o <b>FLASH da câmera [Z]</b> pra cegar quem estiver no caminho por alguns segundos e passar. Aqui você também encontra o <b>GRAVADOR</b>.' },
+  campo: { title: 'NOVO · CAMPO',
+    text: 'A <b>FONTE</b> só fala com o <b>GRAVADOR ligado [X]</b> — e ele também expõe lobistas. Converse com ela pra ganhar o <b>documento</b> que libera o confronto final.' },
+  publicacao: { title: 'RETA FINAL · PUBLICAÇÃO',
+    text: 'Você furou o cerco. Caminhe até a marca <b>PUBLICAR</b>, no centro da sala, pra fechar a matéria e ver a manchete sair.' },
+};
+const _roomIntroSeen = {};
+let _activeInfo = null;
+
+function maybeShowRoomIntro(name) {
+  const info = ROOM_INTROS[name];
+  if (!info || _roomIntroSeen[name]) return;
+  if (ROOMS[name] && ROOMS[name].isBoss) return;
+  _roomIntroSeen[name] = true;
+  setTimeout(() => { if (game.state === 'play') showInfoCard(info.title, info.text); }, 850);
+}
+function showBossTips() {
+  if (showBossTips._seen) return; showBossTips._seen = true;
+  showInfoCard('CONFRONTO · NOVAS FERRAMENTAS',
+    'O deputado dispara <b>processos</b> e <b>discursos</b> e chama <b>aliados</b> que o <b>blindam</b>. Use o <b>PEDIDO FORMAL [C]</b> pra furar a blindagem e a <b>EDITORA-CHEFE [V]</b> (2 cargas) pra limpar os aliados de uma vez. Acerte-o até zerar a barra de vida.');
+}
+function showInfoCard(title, text) {
+  _activeInfo = title;
+  game.state = 'tutorial';
+  const spot = $('tutorialSpotlight'), box = $('tutorialBox');
+  $('tutorialOverlay').classList.add('show');
+  spot.classList.add('no-spot'); spot.style.background = '';
+  box.innerHTML =
+    '<h3>' + title + '</h3>' +
+    '<p>' + text + '</p>' +
+    '<div class="tut-buttons">' +
+      '<span class="tut-step-counter">novidade</span>' +
+      '<button type="button" class="tut-next" id="infoOkBtn">ENTENDI</button>' +
+    '</div>';
+  box.style.top = '50%'; box.style.left = '50%'; box.style.right = 'auto';
+  box.style.transform = 'translate(-50%, -50%)';
+  $('infoOkBtn').addEventListener('click', closeInfoCard);
+}
+function closeInfoCard() {
+  $('tutorialOverlay').classList.remove('show');
+  _activeInfo = null;
+  game.state = 'play';
+}
+
+/* ---------- INIT ÁUDIO ---------- */
+setMute(!soundOn);        // sincroniza botões e estado de mute na carga
+Music.preload('title');
+Music.play('title');      // tenta tocar a faixa-título (autoplay pode estar travado até o 1º gesto)
+setTimeout(showVolumeHint, 400);   // mostra onde ajustar o volume assim que a tela inicial aparece
 
 requestAnimationFrame(loop);
 </script>
