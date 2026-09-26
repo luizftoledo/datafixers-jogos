@@ -820,7 +820,7 @@
   </div>
   <div class="boss-name-card hidden" id="bossNameCard">
     <div class="boss-name-big" id="bossNameBig">CARLÃO DO PASTEL</div>
-    <div class="boss-name-small" id="bossNameSmall">DEPUTADO · CASO RP-9</div>
+    <div class="boss-name-small" id="bossNameSmall">DEPUTADO · CASO PLENITUDE</div>
   </div>
   <div class="boss-shout hidden" id="bossShout"></div>
   <div class="boss-go hidden" id="bossGo">GO!</div>
@@ -829,12 +829,12 @@
   <div class="overlay" id="titleScreen">
     <h1>Sinais Enterrados</h1>
     <div class="tag">um jogo de investigação · jornalzão do cidadão</div>
-    <p>Você é repórter investigativo do <b>Jornalzão do Cidadão</b>. Uma denúncia anônima caiu no canal seguro da redação: uma <b style="color:#d4a017">emenda parlamentar</b> — a parte do Orçamento que cada deputado indica pra onde vai — do deputado <b style="color:#d4a017">Carlão do Pastel</b> teria ido parar numa ONG de fachada. Pra provar (ou descartar) a história, você vai usar as ferramentas reais do jornalismo: <b>Portal da Transparência</b>, consulta pública de <b>CNPJ</b>, pedidos de <b>Lei de Acesso à Informação (LAI)</b>, auditorias do <b>TCU</b> e fontes. Lobistas e aliados do deputado vão tentar te parar antes da publicação.</p>
+    <p>Você trabalha como repórter de investigação do <b>Jornalzão do Cidadão</b>. Uma denúncia anônima caiu no canal seguro da redação: uma <b style="color:#d4a017">emenda parlamentar</b> — a parte do Orçamento que cada deputado indica pra onde vai — do deputado <b style="color:#d4a017">Carlão do Pastel</b> teria ido parar numa ONG de fachada. Pra provar (ou descartar) a história, você vai usar as ferramentas reais do jornalismo: <b>Portal da Transparência</b>, consulta pública de <b>CNPJ</b>, pedidos pela <b>Lei de Acesso à Informação (LAI)</b>, auditorias do <b>TCU</b> e fontes. Lobistas e aliados do deputado vão tentar te parar antes da publicação.</p>
     <div class="keys">
       <span><b>← →</b> mover</span>
       <span><b>↑ / W</b> pular</span>
       <span><b>E</b> interagir</span>
-      <span><b>Z X C</b> habilidades</span>
+      <span><b>Z X C V</b> habilidades</span>
     </div>
     <div class="difficulty" id="difficulty">
       <div class="diff-label">Dificuldade</div>
@@ -861,7 +861,7 @@
       </p>
       <p class="art-p">
         <span class="art-method">RH</span>
-        A Jornalzão do Cidadão lamenta informar que seu vínculo está rescindido a partir desta data. As pistas que você apurou ficaram no notebook que você devolveu na portaria.
+        O Jornalzão do Cidadão lamenta informar que seu vínculo está rescindido a partir desta data. As pistas que você apurou ficaram no notebook que você devolveu na portaria.
       </p>
       <p class="end-closing" style="border-top-color:rgba(192,57,43,.45)">
         Os lobistas chegaram primeiro. A matéria não saiu desta vez.
@@ -882,7 +882,7 @@
       <h2 class="end-headline" id="endHead">Emenda de R$ 4 mi de Carlão do Pastel parou em ONG presidida por ex-motorista do gabinete</h2>
       <div class="end-byline" id="endByline">Por Luiz Toledo · Jornalzão do Cidadão · com documentos públicos, pedidos de LAI, fontes e auditoria do TCU</div>
       <div class="end-article" id="cluesRecap"></div>
-      <p class="end-closing">A reportagem procurou o gabinete do deputado Carlão do Pastel por mensagem, e-mail e telefone, em três oportunidades, e não obteve retorno até o fechamento desta edição. O TCU, o Instituto Plenitude e a Pastel & Cia foram igualmente procurados. O espaço segue aberto para manifestação.</p>
+      <p class="end-closing">Procurado pessoalmente e por escrito, o deputado Carlão do Pastel ameaçou processar o jornal e não respondeu às perguntas enviadas até o fechamento desta edição. O TCU, o Instituto Plenitude e a Pastel &amp; Cia também foram procurados. O espaço segue aberto para manifestação.</p>
     </div>
     <div>
       <a class="btn" id="portfolioBtn" href="https://luizftoledo.github.io" target="_blank" rel="noopener">Ver o portfólio →</a>
@@ -901,7 +901,7 @@
     <button class="tc-btn tc-z locked" data-key="z"   aria-label="câmera (bloqueada)"><span class="ic">📷</span><span class="lbl">Z</span></button>
     <button class="tc-btn tc-x locked" data-key="x"   aria-label="gravador (bloqueado)"><span class="ic">🎙</span><span class="lbl">X</span></button>
     <button class="tc-btn tc-c locked" data-key="c"   aria-label="pedido formal (bloqueado)"><span class="ic">✉</span><span class="lbl">C</span></button>
-    <button class="tc-btn tc-v locked" data-key="v"   aria-label="editora-chefe (bloqueado)"><span class="ic">📞</span><span class="lbl">V</span></button>
+    <button class="tc-btn tc-v locked" data-key="v"   aria-label="editora-chefe (bloqueada)"><span class="ic">📞</span><span class="lbl">V</span></button>
     <button class="tc-btn tc-jump" data-key="arrowup"  aria-label="pular"><span class="ic">▲</span><span class="lbl">PULO</span></button>
     <button class="tc-btn tc-e"    data-key="e"        aria-label="interagir"><span class="lbl">E · INTERAGIR</span></button>
   </div>
@@ -1222,7 +1222,7 @@ const ROOMS = {
   /* ---------- 1 · REDAÇÃO ---------- */
   redacao: {
     title: 'REDAÇÃO',
-    sub: 'jornalzão do cidadão · 04:12',
+    sub: 'jornalzão do cidadão · 4h12',
     palette: { wall:'#1a2030', accent:'#3a4a6e', floor:'#262e44' },
     bg: drawNewsroomBG,
     map: [
@@ -1257,11 +1257,11 @@ const ROOMS = {
       { type:'clue', x:7, y:11, ord:1,
         method:'CAIXA SEGURA · ÁUDIO ANÔNIMO',
         text:'Áudio anônimo de 41 segundos. Uma voz: "Olha as emendas pro Instituto Plenitude. Ninguém aqui dentro entende esse CNPJ."',
-        article:'A reportagem teve acesso a um áudio anônimo recebido pelo canal seguro da Jornalzão do Cidadão. Uma voz não identificada cita o Instituto Plenitude e pede que se examine o cadastro da entidade.' },
+        article:'A reportagem teve acesso a um áudio anônimo recebido pelo canal seguro do Jornalzão do Cidadão. Uma voz não identificada cita o Instituto Plenitude e pede que se examine o cadastro da entidade.' },
       { type:'clue', x:24, y:13, ord:2,
-        method:'PAUTA · BACKGROUND',
-        text:'Mural de pauta: três sobrinhos do deputado contratados como assessores parlamentares em 2022. Festas em iates registradas em redes sociais.',
-        article:'Levantamento da reportagem mostra que o gabinete de Carlão tem três familiares contratados como assessores e registros públicos de viagens em iates de doadores de campanha. Os fatos, isoladamente, não configuram irregularidade, mas compõem o pano de fundo do caso.' },
+        method:'PAUTA · CONTEXTO',
+        text:'Mural de pauta: três parentes de aliados do deputado contratados como assessores parlamentares em 2022. Festas em iates de doadores registradas em redes sociais.',
+        article:'Levantamento da reportagem mostra que o gabinete do deputado federal Carlão do Pastel tem três parentes de aliados políticos contratados como assessores e registros públicos de festas em iates de doadores de campanha. Os fatos, isoladamente, não configuram irregularidade, mas compõem o pano de fundo do caso.' },
       { type:'door', x:29, y:13, dir:'right', to:'arquivo', spawnAt:{ x:1, y:13 } },
     ]
   },
@@ -1298,16 +1298,16 @@ const ROOMS = {
       { type:'enemy', x:22, y:13, range:3, kind:'lobby', speed:0.55, name:'LOBISTA' },
       { type:'clue', x:4,  y:13, ord:3,
         method:'PORTAL DA TRANSPARÊNCIA · CONSULTA',
-        text:'transparencia.gov.br, busca por emendas do autor: empenho 0192/2023, R$ 4 milhões pro Instituto Plenitude. O convênio foi assinado 4 dias depois do aviso público — nenhuma outra entidade concorreu.',
-        article:'Consulta ao Portal da Transparência — site onde qualquer pessoa acompanha os gastos do governo federal, inclusive emendas por autor — localizou o empenho 0192/2023: R$ 4 milhões da emenda do parlamentar destinados ao Instituto Plenitude. O convênio foi assinado quatro dias após a publicação do aviso, sem que nenhuma outra entidade se apresentasse.' },
+        text:'transparencia.gov.br, busca por emendas do autor: empenho 0192/2023, R$ 4 milhões pro Instituto Plenitude. O convênio foi assinado 4 dias depois da indicação do deputado — sem chamamento público, que a lei dispensa para emendas.',
+        article:'Consulta ao Portal da Transparência — site onde qualquer pessoa acompanha os gastos do governo federal, inclusive emendas por autor — localizou o empenho 0192/2023: R$ 4 milhões da emenda do parlamentar destinados ao Instituto Plenitude. O convênio foi assinado quatro dias após a indicação do parlamentar, sem chamamento público — procedimento que a lei dispensa no caso de emendas.' },
       { type:'clue', x:15, y:7, ord:4,
-        method:'RECEITA FEDERAL · CARTÃO CNPJ',
-        text:'Consulta pública do CNPJ: Instituto Plenitude aberto em outubro de 2022 — cinco meses antes do empenho. Presidente: José Aparecido, motorista do gabinete do deputado entre 2015 e 2019. Nenhuma atuação anterior no terceiro setor.',
-        article:'A consulta pública de CNPJ na Receita Federal — aberta a qualquer cidadão — mostra que o Instituto Plenitude foi criado em outubro de 2022, cinco meses antes de receber a emenda. O presidente da entidade, José Aparecido, foi motorista do gabinete do parlamentar entre 2015 e 2019 e não tem registro anterior em organizações do terceiro setor.' },
+        method:'RECEITA FEDERAL · CNPJ E QUADRO DE SÓCIOS',
+        text:'Consulta pública do CNPJ: Instituto Plenitude registrado em outubro de 2022 — cinco meses antes do empenho. Presidente: José Aparecido, motorista do gabinete do deputado entre 2015 e 2019. Nenhuma atuação anterior encontrada nas bases consultadas.',
+        article:'A consulta pública de CNPJ na Receita Federal — aberta a qualquer cidadão — mostra que o Instituto Plenitude foi registrado em outubro de 2022, cinco meses antes de receber a emenda. O presidente da entidade, José Aparecido, foi motorista do gabinete do parlamentar entre 2015 e 2019, segundo registros de pessoal da Câmara dos Deputados. A reportagem não encontrou registros de atuação anterior dele em organizações do terceiro setor nas bases consultadas.' },
       { type:'clue', x:11, y:9, ord:5,
         method:'LEI DE ACESSO À INFORMAÇÃO · FALA.BR',
-        text:'Pedido LAI ao ministério que firmou o convênio: plano de trabalho e prestação de contas. Negado em 1ª instância; liberado após recurso, no 47º dia. Nas notas: 7 pagamentos à Pastel & Cia — empresa em nome do cunhado do deputado, no endereço do escritório político dele.',
-        article:'Pela Lei de Acesso à Informação — que obriga órgãos públicos a entregar documentos a qualquer cidadão que peça —, a reportagem solicitou ao ministério a prestação de contas do convênio. O pedido foi negado em primeira instância e atendido após recurso. As notas fiscais mostram sete pagamentos do Instituto Plenitude à Pastel & Cia, empresa registrada em nome do cunhado do parlamentar e sediada no mesmo endereço do seu escritório político.' },
+        text:'Pedido via LAI ao ministério que firmou o convênio: plano de trabalho e prestação de contas. Negado em 1ª instância; liberado após recurso, no 47º dia. Nas notas: 7 pagamentos à Pastel & Cia — empresa em nome do cunhado do deputado, no endereço do escritório político dele.',
+        article:'Pela Lei de Acesso à Informação — que obriga órgãos públicos a entregar documentos a qualquer cidadão que peça —, a reportagem solicitou ao ministério a prestação de contas do convênio. O pedido foi negado em primeira instância e atendido após recurso. As notas fiscais da prestação de contas oficial registram sete pagamentos do Instituto Plenitude à Pastel & Cia, empresa registrada em nome do cunhado do parlamentar e sediada no mesmo endereço do escritório político do deputado.' },
       { type:'ability', x:10, y:5, key:'cam', name:'CÂMERA', text:'Câmera adquirida. [Z] flash — registra prova e cega lobistas.' },
     ]
   },
@@ -1348,14 +1348,14 @@ const ROOMS = {
       { type:'enemy', x:18, y:13, range:3, kind:'lobby', speed:0.85, name:'ASSESSOR' },
       { type:'clue', x:5,  y:13, ord:6,
         method:'TCU · AUDITORIA PRELIMINAR',
-        text:'Auditoria 14/2024 do TCU lista o repasse à Plenitude entre os "casos de atenção". Análise suspensa em 12/03, depois de recurso apresentado pela própria entidade auditada.',
-        article:'A Auditoria 14/2024 do Tribunal de Contas da União (TCU) — órgão que fiscaliza o uso do dinheiro federal e publica suas decisões — classificou o repasse à Plenitude como "caso de atenção". A análise foi suspensa após recurso apresentado pela própria entidade auditada.' },
+        text:'Auditoria 14/2024 do TCU lista o repasse à Plenitude entre os "casos de atenção". Análise parada desde 12/03/2024, à espera da resposta da entidade auditada.',
+        article:'A Auditoria 14/2024 do Tribunal de Contas da União (TCU) — órgão que fiscaliza o uso do dinheiro federal e publica suas decisões — classificou o repasse à Plenitude como "caso de atenção". A análise está parada desde março de 2024, à espera da resposta da entidade auditada.' },
       { type:'clue', x:11, y:9, ord:7,
-        method:'TCU · ACÓRDÃO PROVISÓRIO',
-        text:'Decisão preliminar fala em "indícios não conclusivos de desvio de finalidade". Sem julgamento de mérito agendado até o fechamento desta edição.',
-        article:'O acórdão provisório do TCU fala em "indícios não conclusivos de desvio de finalidade". Não há, até agora, julgamento de mérito agendado.' },
+        method:'TCU · RELATÓRIO PRELIMINAR',
+        text:'Relatório preliminar da área técnica fala em "indícios não conclusivos de desvio de finalidade". O caso ainda não tem julgamento marcado.',
+        article:'O relatório preliminar da área técnica do TCU fala em "indícios não conclusivos de desvio de finalidade". Não há, até agora, julgamento de mérito agendado.' },
       { type:'clue', x:20, y:13, ord:8,
-        method:'MEMO INTERNO · OFF THE RECORD',
+        method:'MEMO INTERNO · DOCUMENTO OBTIDO',
         text:'Memo de servidor do TCU registra três trocas na relatoria do caso. O relator atual aparece em fotos públicas num jantar de campanha do deputado em 2022.',
         article:'Memorando interno obtido pela reportagem indica três trocas sucessivas na relatoria do caso dentro do TCU. Registros públicos mostram que o relator atual participou de jantar de campanha do parlamentar em 2022.' },
       { type:'ability', x:15, y:7, key:'rec', name:'GRAVADOR', text:'Gravador adquirido. [X] dispara ondas sonoras — expõe lobistas, e a fonte só fala com ele ligado.' },
@@ -1407,11 +1407,11 @@ const ROOMS = {
       { type:'enemy', x:4,  y:13, range:2, kind:'lobby', speed:0.6, name:'LOBISTA' },
       { type:'enemy', x:11, y:13, range:2, kind:'lobby', speed:0.9, name:'ASSESSOR' },
       { type:'enemy', x:25, y:13, range:2, kind:'lobby', speed:0.75, name:'LOBISTA' },
-      { type:'clue', x:8,  y:13, ord:9,
+      { type:'clue', x:8,  y:13, ord:9, hidden:true, hiddenBy:'doc',
         method:'FONTE · CADERNO DE ANOTAÇÕES',
-        text:'Caderno espiral, capa preta, anotações em caneta azul. Lista nomes de "doadores" da campanha 2022. Três deles aparecem como sócios formais da Plenitude depois das eleições.',
-        article:'A reportagem teve acesso a um caderno entregue por ex-assessor do gabinete. Em suas anotações, três pessoas listadas como "doadores" da campanha 2022 passam a constar como sócios formais do Instituto Plenitude depois das eleições.' },
-      { type:'clue', x:21, y:13, ord:10,
+        text:'Caderno espiral, capa preta, anotações em caneta azul. Lista nomes de "doadores" da campanha 2022. Três deles aparecem como dirigentes da Plenitude no cadastro da Receita depois das eleições.',
+        article:'A reportagem teve acesso a um caderno entregue por uma fonte que pediu anonimato. Nas anotações, três pessoas listadas como "doadores" da campanha de 2022 passam a constar como dirigentes do Instituto Plenitude depois das eleições.' },
+      { type:'clue', x:21, y:13, ord:10, hidden:true, hiddenBy:'doc',
         method:'PENDRIVE · DOCUMENTO VAZADO',
         text:'Pendrive criptografado, senha entregue à parte. Dentro: planilha com 23 transferências da Plenitude pra Pastel & Cia (2023-2024). Soma: R$ 3,4 milhões — de cada R$ 100 da emenda, R$ 85 voltaram pra empresa do cunhado.',
         article:'Planilha contábil obtida em pendrive entregue pela fonte registra 23 transferências do Instituto Plenitude à Pastel & Cia entre 2023 e 2024, somando R$ 3,4 milhões — o equivalente a 85% do valor da emenda.' },
@@ -1421,7 +1421,7 @@ const ROOMS = {
   /* ---------- 5 · OUTRO LADO (BOSS) ---------- */
   confronto: {
     title: 'OUTRO LADO',
-    sub: 'antessala da editoria · 23h59',
+    sub: 'gabinete do deputado · 21h58',
     palette: { wall:'#1a1018', accent:'#3a1820', floor:'#241016' },
     bg: drawConfrontoBG,
     isBoss: true,
@@ -1451,11 +1451,11 @@ const ROOMS = {
       { type:'boss',
         x:22, y:13,
         name:'CARLÃO DO PASTEL',
-        sub:'DEPUTADO · CASO RP-9',
+        sub:'DEPUTADO · CASO PLENITUDE',
         hp:20,
         intro:[
-          '— "Repórterzinho. Você não tem ideia com quem está mexendo."',
-          '— "Meu advogado já tem seu nome. Vou processar a Jornalzão do Cidadão por dano moral, calúnia, difamação."',
+          '— "Repórterzinho. Você não tem ideia de com quem está mexendo."',
+          '— "Meu advogado já tem seu nome. Vou processar você e o Jornalzão do Cidadão por calúnia, difamação e dano moral."',
           '— "Some daqui antes que eu chame meus aliados."',
         ],
         shouts:[
@@ -1468,7 +1468,7 @@ const ROOMS = {
   /* ---------- 6 · PUBLICAÇÃO ---------- */
   publicacao: {
     title: 'PUBLICAÇÃO',
-    sub: 'mesa central · 22:47',
+    sub: 'mesa central · 22h47',
     palette: { wall:'#1a1d2c', accent:'#3d4566', floor:'#252a40' },
     bg: drawPublishBG,
     map: [
@@ -1491,7 +1491,7 @@ const ROOMS = {
       '##############################',
     ],
     entities: [
-      { type:'door', x:0, y:13, dir:'left', to:'campo', spawnAt:{ x:28, y:13 } },
+      { type:'door', x:0, y:13, dir:'left', to:'confronto', spawnAt:{ x:28, y:13 } },
       { type:'desk', x:11, y:13 }, { type:'desk', x:17, y:13 },
       { type:'finish', x:14, y:13 },
     ]
@@ -1816,7 +1816,7 @@ function update(dt) {
       spawnFlashParticles();
       SFX.flash();
     } else {
-      toast('câmera ainda não — passa no arquivo');
+      toast('câmera ainda não — passa nas consultas públicas');
     }
   }
   if (pressed['x'] && !game.abilities.rec) {
@@ -2493,7 +2493,7 @@ function updateBossDefeat() {
   }
   if (game.bossDefeat.t === 70) {
     Music.play('title');   // boss caiu — retoma a faixa-título
-    openDialog('EDITOR · NA VOZ DA REDAÇÃO', [
+    openDialog('EDITOR · AO TELEFONE', [
       'Toledo. Falou com o gabinete? Beleza.',
       'Pediu manifestação por escrito, registrou tudo. Outro lado: feito.',
       'Agora vai. Publica. A porta da editoria tá liberada.',
@@ -2528,7 +2528,7 @@ function drawNewsroomBG() {
   ctx.font = '10px JetBrains Mono';
   ctx.fillText('• AO VIVO · JORNALZÃO DO CIDADÃO · APURAÇÃO EM ANDAMENTO ·', 480, 80);
   ctx.fillStyle = 'rgba(232,227,208,.22)';
-  ctx.fillText('pauta: denúncia anônima · emenda Carlão do Pastel · 04:09', 480, 100);
+  ctx.fillText('pauta: denúncia anônima · emenda Carlão do Pastel · 4h09', 480, 100);
   ctx.fillText('checagem: CNPJ Plenitude · empenho 0192/2023', 480, 116);
 }
 function drawArchiveBG() {
@@ -2565,7 +2565,7 @@ function drawCourthouseBG() {
   }
   ctx.fillStyle = 'rgba(212,160,23,.4)';
   ctx.font = '9px JetBrains Mono';
-  ctx.fillText('TCU · TRIBUNAL DE CONTAS DA UNIÃO · CASO RP-9', 14, 14);
+  ctx.fillText('TCU · TRIBUNAL DE CONTAS DA UNIÃO · CASO PLENITUDE', 14, 14);
 }
 function drawFieldBG() {
   // night sky gradient
@@ -2588,7 +2588,7 @@ function drawFieldBG() {
   ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.fill();
   ctx.fillStyle = 'rgba(212,160,23,.35)';
   ctx.font = '9px JetBrains Mono';
-  ctx.fillText('VICINAL · 23h41 · sem cobertura de celular', 14, 14);
+  ctx.fillText('VICINAL · 20h41 · sem cobertura de celular', 14, 14);
 }
 function drawConfrontoBG() {
   // antessala da editoria — corredor escuro, fotos do deputado nas paredes, luz vermelha de "AO VIVO"
@@ -2678,7 +2678,7 @@ function drawPublishBG() {
   // distant clock + label, away from HUD
   ctx.fillStyle = 'rgba(212,160,23,.28)';
   ctx.font = '10px JetBrains Mono';
-  ctx.fillText('FECHAMENTO · 22:47', W-160, 270);
+  ctx.fillText('FECHAMENTO · 22h47', W-160, 270);
   // light from the editor's lamp
   const gr = ctx.createRadialGradient(W*0.55, 360, 30, W*0.55, 360, 240);
   gr.addColorStop(0,'rgba(212,160,23,.18)');
@@ -2891,7 +2891,7 @@ function drawEntities() {
         const tieColor       = isAssessor ? '#a04a14' : '#7a1f1f';
         const auraColor      = isAssessor ? '122,60,138' : '192,57,43';
         const labelColor     = isAssessor ? 'rgba(168,90,200,.85)' : 'rgba(192,57,43,.7)';
-        const labelText      = isAssessor ? 'ASSESSOR' : (e.name || 'LOBISTA');
+        const labelText      = isAssessor ? 'ALIADO' : (e.name || 'LOBISTA');
         // shadow
         ctx.fillStyle = 'rgba(0,0,0,.45)';
         ctx.beginPath();
@@ -3117,7 +3117,7 @@ function drawEntities() {
         if (e.type === 'guard') {
           ctx.fillStyle = stunned ? 'rgba(212,160,23,.85)' : 'rgba(192,57,43,.7)';
           ctx.font = '8px JetBrains Mono';
-          ctx.fillText(stunned ? 'CEGO' : 'GUARDA', ex+2, ey-4);
+          ctx.fillText(stunned ? 'CEGO' : 'SEGURANÇA', ex+2, ey-4);
         }
         break;
       }
@@ -3557,8 +3557,8 @@ if (_ahClose) _ahClose.addEventListener('click', dismissVolumeHint);
 
 /* ---------- TUTORIAL (overlay com spotlight, estilo "10 dias") ---------- */
 const TUTORIAL_STEPS = [
-  { target: null, title: 'BEM-VINDO À APURAÇÃO',
-    text: 'Você é um <b>repórter investigativo</b>. Vamos ver rapidinho como se joga antes de começar.' },
+  { target: null, title: 'COMECE A APURAÇÃO',
+    text: 'Você trabalha como <b>repórter de investigação</b>. Vamos ver rapidinho como se joga antes de começar.' },
   { target: null, title: 'COMO ANDAR',
     text: 'Mexa com <b>← →</b> e pule com <b>↑ / W / espaço</b>. No celular, use os botões na parte de baixo da tela.' },
   { target: null, title: 'INTERAGIR',
