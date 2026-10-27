@@ -55,7 +55,7 @@ const api={ready,status,actor,prop,tick(dt){now+=dt;for(const e of ROOMS[game.ro
  }
  if(e.type==='npc'||e.type==='guard'){
   if(!available('npcs'))return false;
-  const row=e.type==='guard'?2:e.name==='FONTE'?1:0;
+  const row=e.spriteRow??(e.type==='guard'?2:e.name==='FONTE'?1:0);
   const talking=game.state==='dialog'&&(game.dialog?.currentWho||game.dialog?.who)?.includes(e.name);
   const index=row*4+(talking?[0,1,2,1][Math.floor(now/360)%4]:0);
   const dir=game.player.x<ex?-1:1,stunned=e.type==='guard'&&game.guardStunned>0;

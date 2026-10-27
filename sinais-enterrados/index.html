@@ -912,26 +912,14 @@
 
   <!-- FIRED (game over) -->
   <div class="overlay hidden" id="firedScreen">
-    <div class="tag">na redação · investigação interrompida</div>
+    <div class="tag">investigação interrompida</div>
     <div class="end-paper">
-      <div class="end-kicker" style="border-bottom-color:rgba(192,57,43,.55); color:#c0392b">APURAÇÃO INTERROMPIDA</div>
-      <h2 class="end-headline" style="color:#e8e3d0">"Davi, sai daí. A gente continua daqui."</h2>
-      <p class="art-p" style="margin-top:18px">
-        <span class="art-method">MARTA · EDITORA</span>
-        Marta recebe a ligação quando você já perdeu acesso ao arquivo. Do outro lado da linha, só consegue ouvir a confusão. Pede que você volte.
-      </p>
-      <p class="art-p">
-        <span class="art-method">NA REDAÇÃO</span>
-        Na mesa, a reportagem continua incompleta. Há cobranças por atendimento, um portão fechado e perguntas que o gabinete não respondeu. Você vai precisar retomar a investigação.
-      </p>
-      <p class="end-closing" style="border-top-color:rgba(192,57,43,.45)">
-        A reportagem não foi concluída nesta tentativa.
-      </p>
+      <div class="end-kicker" style="color:#c0392b">APURAÇÃO INTERROMPIDA</div>
+      <h2 class="end-headline" id="failureTitle"></h2>
+      <p class="art-p" id="failureBody" style="margin-top:18px"></p>
     </div>
-    <div>
-      <button class="btn" id="firedRetry" style="border-color:#c0392b; color:#c0392b">Tentar de novo</button>
-    </div>
-    <div class="credit">caso fictício · reiniciar a investigação</div>
+    <div><button class="btn" id="firedRetry">Tentar de novo</button></div>
+    <div class="credit">caso fictício</div>
   </div>
 
   <!-- END -->
@@ -1853,7 +1841,7 @@ function update(dt) {
     }
   }
   if (pressed['x'] && !game.abilities.rec) {
-    toast('gravador ainda não — passa no Tribunal de Contas');
+    toast('gravador ainda não — procure no órgão de controle');
   }
   if (pressed['x'] && game.abilities.rec && game.recCooldown <= 0) {
     game.recPulse = 1.0;
@@ -2087,7 +2075,7 @@ function update(dt) {
               continue;
             }
             if (e.locked === 'doc' && !game.abilities.doc) {
-              toast('precisa de prova pra confrontar o gabinete');
+              toast('Converse com Elias e receba o pendrive antes de ir ao gabinete.');
               continue;
             }
             if (e.locked === 'boss' && !(game.boss && game.boss.defeated)) {
@@ -2109,7 +2097,7 @@ function update(dt) {
           const lines = useAlt ? (e.altDialog || e.dialog) : e.dialog;
           openDialog(e.displayName||e.name, lines);
           if (e.gives && !useAlt && !game.abilities[e.gives]) {
-            game.pendingPickup = { key:e.gives, name:'DOCUMENTO VAZADO' };
+            game.pendingPickup = { key:e.gives, name:'PENDRIVE DE ELIAS' };
           }
         }
       }
@@ -2178,6 +2166,7 @@ function updateBossHpUI() {
 
 /* ---------- BOSS INTRO (Mega Man-style) ---------- */
 function startBossIntro() {
+  if(window.GameStory?.bossLines)game.boss.intro=GameStory.bossLines();
   game.state = 'bossIntro';
   game.bossIntro = {
     phase: 0,    // 0: walk-in, 1: dialog, 2: name reveal, 3: hp fill, 4: GO!, 5: done
@@ -2252,8 +2241,8 @@ function updateBossIntro() {
     // One voiced line; the health reveal waits for it to finish.
     if(bi.t===1){
       const shout=document.getElementById('bossShout');
-      shout.textContent='Some daqui!';shout.classList.remove('hidden');
-      window.GameAudio?.speak('Some daqui!');
+      const line=GameStory.lines('shouts')[0].text;shout.textContent=line;shout.classList.remove('hidden');
+      window.GameAudio?.speak(line);
     }
     if (bi.hpFilled >= game.boss._maxHp && bi.t > game.boss._maxHp * 7 + 42 && !speaking) {
       bi.phase = 4; bi.t = 0;
@@ -3486,6 +3475,10 @@ window.render_game_to_text=()=>JSON.stringify({coordinates:'origin top-left; x r
 
 /* ---------- FIRED ---------- */
 function firedGame() {
+  const failure=STORY_DATA.failure[game.room==='confronto'&&game.boss&&!game.boss.defeated?'boss':'normal'];
+  document.getElementById('failureTitle').textContent=failure.title;
+  document.getElementById('failureBody').textContent=failure.body;
+  document.getElementById('firedRetry').textContent=failure.retry;
   window.GameAudio?.stopVoice();
   game.state = 'fired';
   stopBossMusic();
@@ -3722,16 +3715,8 @@ window.addEventListener('resize', () => {
 });
 
 /* ---------- EXPLICAÇÕES DE TELAS NOVAS (novidades por sala) ---------- */
-const ROOM_INTROS = {
-  arquivo: { title: 'NOVO · CONSULTAS PÚBLICAS',
-    text: 'Confira o repasse, o cadastro do instituto e as notas fiscais. Há documentos nas plataformas e uma <b>câmera</b> nesta sala. Evite os lobistas: encostar neles tira uma vida.' },
-  forum: { title: 'NOVO · Tribunal de Contas',
-    text: 'Procure a vistoria e a análise dos atendimentos. <b>Nádia</b> bloqueia a saída: o <b>flash [Z]</b> permite passar por alguns segundos. O <b>gravador</b> também está aqui.' },
-  campo: { title: 'NOVO · CAMPO',
-    text: 'Lia trabalhou no instituto e aceitou conversar. Você precisa ter o <b>gravador</b>. O <b>pendrive</b> permite localizar os últimos documentos e seguir para o gabinete.' },
-  publicacao: { title: 'RETA FINAL · PUBLICAÇÃO',
-    text: 'Caminhe até a mesa central para conferir o resultado. A reportagem final depende dos documentos que você encontrou.' },
-};
+const ROOM_INTROS = {}; // Installed from the canonical story data before Start is enabled.
+
 const _roomIntroSeen = {};
 let _activeInfo = null;
 
@@ -3794,13 +3779,15 @@ addEventListener('blur',releaseAllInputs);
 document.addEventListener('visibilitychange',()=>{releaseAllInputs();last=performance.now();simAccumulator=0;if(document.hidden){Music.suspend();window.GameAudio?.stopAll();}else{Music.resume();}});
 requestAnimationFrame(loop);
 </script>
-<script src="story.js?v=article-5"></script>
+<script src="story-data.js?v=3"></script>
+<script src="story.js?v=3"></script>
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
-<script src="hd2d.js?v=proportions-3"></script>
-<script src="audio/manifest.js?v=boss-3"></script>
+<script src="hd2d.js?v=proportions-4"></script>
+<script src="audio/manifest.js?v=story-3"></script>
 <script src="audio/combat-manifest.js?v=1"></script>
 <script src="audio.js?v=combat-1"></script>
 <script src="combat-audio.js?v=1"></script>
 <script src="illustrations.js?v=context-3"></script>
+<script>document.getElementById("startBtn").disabled=!(window.GameStory&&window.GameAudio&&window.HD2D&&GameStory.allSpoken.every(t=>GAME_AUDIO.voices[t]));</script>
 </body>
 </html>
