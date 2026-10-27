@@ -3515,7 +3515,36 @@ document.getElementById('startBtn').addEventListener('click', () => {
   startTutorial();             // tour de boas-vindas (estilo "10 dias")
 });
 document.getElementById('replayBtn').addEventListener('click', () => location.reload());
-document.getElementById('firedRetry').addEventListener('click', () => location.reload());
+function retryAfterDeath() {
+  if (game.room !== 'confronto' || !game.boss || game.boss.defeated) {
+    location.reload();
+    return;
+  }
+  unlockAudio();
+  window.GameAudio?.stopAll();
+  document.getElementById('firedScreen').classList.add('hidden');
+  setRoom('confronto');
+  // Restore the encounter, keeping collected evidence and unlocked tools.
+  hideBossUI();
+  game.bossIntro = null;
+  game.boss._x = game.boss.x*TILE;
+  game.state = 'play';
+  game.player.dir = 1;
+  game.player.onGround = false;
+  game.player.jumpBuffer = game.player.coyote = 0;
+  game.player.invuln = 90;
+  game.player.flash = 0;
+  for (const k of ['recCooldown','pedCooldown','chiefPulse','recPulse','flashLight','shake','fadeAlpha','fadeDir']) game[k] = 0;
+  game._fadeFn = null;
+  for (const k in keys) keys[k] = false;
+  for (const k in pressed) delete pressed[k];
+  viewCamera.room = null;
+  showBossUI();
+  updateBossHpUI();
+  updateHearts();
+  startBossMusic();
+}
+document.getElementById('firedRetry').addEventListener('click', retryAfterDeath);
 
 // Extra audio-unlock safety: any first touch/click anywhere unlocks too
 ['touchstart', 'mousedown', 'keydown'].forEach(ev => {
