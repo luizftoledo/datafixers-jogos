@@ -34,7 +34,7 @@
   #stage {
     position:relative;
     width:min(100vw, 960px);
-    aspect-ratio:960 / 544;
+    aspect-ratio:960 / 640;
     box-shadow:
       0 0 0 1px rgba(212,160,23,.18),
       0 30px 80px rgba(0,0,0,.8),
@@ -771,7 +771,7 @@
 @media(max-width:640px){#titleScreen{padding:18px;justify-content:flex-start}#titleScreen h1{font-size:27px}#titleScreen .tag{font-size:8px;letter-spacing:.1em;margin-bottom:12px}#titleScreen p{font-size:11px}#titleScreen .keys{font-size:8px;gap:4px}#titleScreen .btn{flex-shrink:0}#titleScreen .credit{font-size:8px}}
 </style><style>
 @media (orientation:portrait) and (max-width:720px){
- #stage{height:auto;flex:0 0 auto;aspect-ratio:960/544}
+ #stage{height:auto;flex:0 0 auto;aspect-ratio:960/640}
  #stage canvas{width:100%;height:100%;object-fit:contain}
  .hud{inset:6px 6px auto;padding:0;gap:4px;font-size:8px}
  .hud-left{max-width:40%;gap:3px;align-content:flex-start}
@@ -781,10 +781,10 @@
  .ability::after{right:2px;font-size:6px}.hearts{padding:3px 5px}.hearts span{font-size:8px}
  #audioBtn{top:6px;right:6px;padding:4px;font-size:10px}
  .room-name{font-size:20px}.room-name .sub{font-size:6px;letter-spacing:.15em}
- .touch-ctrl{padding:20px 16px;max-height:calc(100dvh - 56.667vw)}
+ .touch-ctrl{padding:20px 16px;max-height:calc(100dvh - 66.667vw)}
 }
 @media (orientation:landscape) and (max-height:500px){
- #stage{width:min(100vw,176.470588dvh);height:auto;max-height:100dvh;flex:0 0 auto;aspect-ratio:960/544}
+ #stage{width:min(100vw,150dvh);height:auto;max-height:100dvh;flex:0 0 auto;aspect-ratio:960/640}
  #shell{justify-content:center}
  .tc-btn{backdrop-filter:none}
 }
@@ -793,7 +793,7 @@
 
 <div id="shell">
 <div id="stage">
-  <canvas id="game" width="960" height="544"></canvas>
+  <canvas id="game" width="960" height="640"></canvas>
   <div class="scan hd-vignette"></div>
   <div class="grain"></div>
 
@@ -1790,7 +1790,10 @@ function update(dt) {
   // Fell out (none in current rooms but safe)
   if (p.y > H + 200) respawnPlayer();
 
-  p.walkDistance=(p.walkDistance||0)+(p.onGround?Math.abs(p.vx):0);
+  const moved=p.onGround?Math.abs(p.vx):0;
+  p.walkDistance=(p.walkDistance||0)+moved;
+  p.stepDistance=(p.stepDistance||0)+moved;
+  if(p.onGround && Math.abs(p.vx)>.6 && p.stepDistance>=30){p.stepDistance%=30;SFX.step?.();}
 
   // Animation timer
   if (Math.abs(p.vx) > 0.4 && p.onGround) p.anim += dt*0.012*Math.abs(p.vx);
@@ -3363,9 +3366,21 @@ function drawChiefPulse() {
   ctx.beginPath(); ctx.arc(cx, cy, r*0.7, 0, Math.PI*2); ctx.stroke();
 }
 
+// Camera crops the world without changing physics or sprite anchors.
+const viewCamera={x:0,y:0,room:null,width:360,height:240};
+window.GameCamera=viewCamera;
 function render() {
-  ctx.clearRect(0,0,W,H);
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const cam=viewCamera,p=game.player;
+  const targetX=Math.max(0,Math.min(W-cam.width,p.x+p.w/2-cam.width/2+p.dir*35));
+  const targetY=Math.max(0,Math.min(H-cam.height,p.y+p.h-cam.height*.78));
+  const snap=cam.room!==game.room||Math.abs(targetX-cam.x)>cam.width*.8;
+  cam.x=snap?targetX:cam.x+(targetX-cam.x)*.14;
+  cam.y=snap?targetY:cam.y+(targetY-cam.y)*.12;
+  cam.room=game.room;
   ctx.save();
+  ctx.scale(cv.width/cam.width,cv.height/cam.height);
+  ctx.translate(-cam.x,-cam.y);
   if (game.shake > 0) {
     const s = game.shake;
     ctx.translate((Math.random()-0.5)*s, (Math.random()-0.5)*s);
@@ -3399,7 +3414,7 @@ function render() {
   }
   if (game.fadeAlpha > 0) {
     ctx.fillStyle = `rgba(5,8,17,${game.fadeAlpha})`;
-    ctx.fillRect(0,0,W,H);
+    ctx.fillRect(0,0,cv.width,cv.height);
   }
 }
 
@@ -3726,6 +3741,6 @@ requestAnimationFrame(loop);
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
 <script src="hd2d.js?v=perf-audio-2"></script>
 <script src="audio/manifest.js?v=story-2"></script>
-<script src="audio.js?v=story-2"></script>
+<script src="audio.js?v=movement-3"></script>
 </body>
 </html>
