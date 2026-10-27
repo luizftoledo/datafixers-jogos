@@ -1623,6 +1623,11 @@ function setRoom(name, spawnAt) {
         bossEnt._invuln = 0;
         bossEnt._enraged = false;
         bossEnt._fall = 0;
+        window.CombatAudio?.reset();
+        bossEnt._move='recover';bossEnt._moveT=65;bossEnt._moveIndex=0;
+        bossEnt._hidden=false;bossEnt._warning=null;bossEnt._targetX=null;
+        bossEnt._hitsSinceMove=0;bossEnt._vy=0;bossEnt._airborne=false;
+        bossEnt._groundY=bossEnt.y*TILE;
         game.boss = bossEnt;
         startBossIntro();
       }
@@ -1930,7 +1935,7 @@ function update(dt) {
       ).length;
       const shielded = liveAssessors > 0 && !proj.pierce;
       if (overlap(prj, br)) {
-        if (b._invuln > 0) {
+        if (b._invuln > 0 || b._hidden) {
           // skip — boss in invuln frames
         } else if (shielded) {
           toast('os aliados blindam o deputado · use o pedido [c]');
@@ -1940,7 +1945,9 @@ function update(dt) {
         } else {
           b._hp -= proj.dmg || 1;
           b._invuln = 24;
-          b._stunned = 26;
+          b._stunned = 4;
+          b._hitsSinceMove=(b._hitsSinceMove||0)+1;
+          if(b._hitsSinceMove>=3 && (!b._move||b._move==='recover'))b._moveT=Math.min(b._moveT||0,12);
           flashSparks(b._x + bw/2 - 4, br.y + 6, proj.weapon === 'ped' ? '#d4a017' : '#e8e3d0');
           SFX.bossHit();
           updateBossHpUI();
@@ -2280,95 +2287,53 @@ function advanceBossIntro() {
 
 /* ---------- BOSS AI ---------- */
 function updateBoss(dt) {
-  const b = game.boss;
-  if (!b || b.defeated) return;
-  if (b._invuln > 0) b._invuln--;
-  if (b._groundY === undefined) b._groundY = b.y * TILE;
-  if (b._y === undefined) b._y = b._groundY;
-
-  // gravity / jump physics — always apply, even when stunned
-  b._vy = (b._vy || 0) + 0.32;
-  const wasAirborne = !!b._airborne;
-  b._y += b._vy;
-  if (b._y >= b._groundY) {
-    b._y = b._groundY;
-    b._vy = 0;
-    if (wasAirborne) {
-      game.shake = Math.max(game.shake || 0, b._enraged ? 6 : 3);
-      SFX.bossLand();
-      if (b._groundPound) {
-        b._groundPound = false;
-        spawnDiscurso(b, -1);
-        spawnDiscurso(b,  1);
-      }
+  const b=game.boss;if(!b||b.defeated)return;
+  if(b._invuln>0)b._invuln--;
+  if(b._stunned>0)b._stunned--; // hit feedback never freezes attack timers or movement
+  window.CombatAudio?.tick();
+  b._anim+=.09;b._groundY=b.y*TILE;b._y??=b._groundY;
+  b._dir=game.player.x<b._x?-1:1;
+  if(!b._enraged&&b._hp<=b._maxHp/2){b._enraged=true;CombatAudio?.enrage();game.shake=6;}
+  const live=ROOMS[game.room].entities.filter(e=>e.type==='enemy'&&e.kind==='assessor'&&!e.defeated).length;
+  if(--b._spawnTimer<=0){if(live<(b._enraged?3:2))spawnAssessor();b._spawnTimer=b._enraged?230:310;}
+  const recover=(frames=55)=>{b._move='recover';b._moveT=frames;b._warning=null;b._hidden=false;b._hitsSinceMove=0;};
+  const wave=(dir)=>{spawnDiscurso(b,dir);const shot=game.bossProjectiles.at(-1);shot.y=b._groundY+TILE-18;shot.vx=dir*6.5;};
+  b._moveT=(b._moveT??1)-1;
+  if(b._move==='recover'){
+    if(b._moveT<=0){
+      const pattern=['jump','vanish','volley','dash'];b._nextMove=pattern[(b._moveIndex||0)%pattern.length];b._moveIndex=(b._moveIndex||0)+1;
+      b._move='tell';b._moveT=b._enraged?38:50;
+      b._targetX=b._x>W/2?110:W-150;b._warning=b._nextMove;
+      SFX.processo();
     }
-    b._airborne = false;
-  } else {
-    b._airborne = true;
+  }else if(b._move==='tell'&&b._moveT<=0){
+    b._move=b._nextMove;b._warning=null;b._hitsSinceMove=0;
+    if(b._move==='jump'){b._fromX=b._x;b._fromY=b._groundY;b._moveT=70;SFX.bossJump();}
+    if(b._move==='vanish'){b._hidden=true;b._moveT=38;flashSparks(b._x+18,b._y-50,'#d9b3ff');}
+    if(b._move==='volley'){b._moveT=b._enraged?70:88;}
+    if(b._move==='dash'){b._fromX=b._x;b._moveDuration=b._enraged?45:55;b._moveT=b._moveDuration;}
+  }else if(b._move==='jump'){
+    const t=Math.min(1,1-b._moveT/70);b._airborne=true;
+    b._x=b._fromX+(b._targetX-b._fromX)*t;b._y=b._groundY-Math.sin(Math.PI*t)*150;
+    if(b._moveT<=0){b._x=b._targetX;b._y=b._groundY;b._airborne=false;SFX.bossLand();game.shake=5;wave(-1);wave(1);recover(b._enraged?38:58);}
+  }else if(b._move==='vanish'&&b._moveT<=0){
+    b._x=b._targetX;b._y=b._groundY;b._hidden=false;
+    b._move='appear';b._moveT=40;b._warning='volley';flashSparks(b._x+18,b._y-50,'#d9b3ff');
+  }else if(b._move==='appear'&&b._moveT<=0){
+    spawnDiscurso(b,b._dir);recover(55);
+  }else if(b._move==='volley'){
+    const interval=b._enraged?14:22;
+    if(b._moveT>0&&b._moveT%interval===0){spawnProcesso(b);const shot=game.bossProjectiles.at(-1);shot.vx=b._dir*(3+(b._moveT/interval%3)*1.6);shot.vy=-3.8-(b._moveT/interval%2)*1.6;}
+    if(b._moveT<=0)recover(62);
+  }else if(b._move==='dash'){
+    const duration=b._moveDuration||55,t=Math.max(0,Math.min(1,1-b._moveT/duration));
+    b._x=b._fromX+(b._targetX-b._fromX)*t;b._artDistance=(b._artDistance||0)+12;
+    if(b._moveT<=0)recover(65);
   }
-
-  if (b._stunned > 0) {
-    b._stunned--;
-    b._anim += 0.04;
-    return;
+  if(!b._hidden&&['dash','jump'].includes(b._move)&&game.player.invuln<=0&&overlap(combatRect(b),combatRect(game.player,true))){
+    const p=game.player;p.hp--;p.invuln=80;p.vx=(p.x<b._x?-1:1)*5;p.vy=-4;CombatAudio?.playerHurt();updateHearts();pulseHearts();if(p.hp<=0)firedGame();
   }
-
-  // patrol — slow walk left/right within range
-  if (!b._patrolDir) b._patrolDir = -1;
-  b._x += b._patrolDir * (b._enraged ? 0.7 : 0.45);
-  b._anim += 0.07;
-  const minX = (b.x - 4) * TILE;
-  const maxX = (b.x + 1) * TILE;
-  if (b._x < minX) { b._x = minX; b._patrolDir =  1; }
-  if (b._x > maxX) { b._x = maxX; b._patrolDir = -1; }
-
-  // face player
-  const px = game.player.x + game.player.w/2;
-  b._dir = (px < b._x + 18) ? -1 : 1;
-
-  // jump trigger (only when grounded)
-  b._jumpCd = (b._jumpCd === undefined ? 180 : b._jumpCd - 1);
-  if (b._jumpCd <= 0 && !b._airborne) {
-    const doPound = b._enraged && Math.random() < 0.45;
-    b._vy = doPound ? -8.4 : -6;
-    if (doPound) b._groundPound = true;
-    b._patrolDir = b._dir; // hop toward player
-    SFX.bossJump();
-    b._jumpCd = b._enraged ? 110 : 200;
-  }
-
-  // attack timer — mix processo + discurso, no attacks mid-air
-  b._attackTimer--;
-  if (b._attackTimer <= 0 && !b._airborne) {
-    const discursoChance = b._enraged ? 0.5 : 0.32;
-    if (Math.random() < discursoChance) {
-      spawnDiscurso(b, b._dir);
-    } else {
-      spawnProcesso(b);
-    }
-    b._attackTimer = b._enraged ? 75 : 110;
-  }
-
-  // advisor spawn timer (max simultaneous)
-  const liveAssessors = ROOMS[game.room].entities.filter(e =>
-    e.type === 'enemy' && e.kind === 'assessor' && !e.defeated
-  ).length;
-  const maxAssessors = b._enraged ? 5 : 3;
-  b._spawnTimer--;
-  if (b._spawnTimer <= 0 && liveAssessors < maxAssessors) {
-    spawnAssessor();
-    b._spawnTimer = b._enraged ? 130 : 200;
-  } else if (liveAssessors >= maxAssessors) {
-    b._spawnTimer = 60;
-  }
-
-  // enraged trigger at half HP
-  if (!b._enraged && b._hp <= b._maxHp / 2) {
-    b._enraged = true;
-    window.CombatAudio?.enrage();
-    toast('Carlão enfurecido — vai chamar mais aliados');
-    game.shake = 8;
-  }
+  b._x=Math.max(55,Math.min(W-95,b._x));
 }
 
 function spawnProcesso(b) {
@@ -2479,6 +2444,7 @@ function updateBossProjectiles() {
 }
 
 function onBossDefeated() {
+  game.boss._warning=null;game.boss._hidden=false;
   game.boss.defeated = true;
   game.bossBeaten = true;
   game.boss._fall = 0;
@@ -3471,7 +3437,7 @@ function loop(t){
  requestAnimationFrame(loop);
 }
 window.advanceTime=(ms)=>{manualUntil=performance.now()+100;const steps=Math.max(1,Math.round(ms/(1000/60)));for(let i=0;i<steps;i++)simulationFrame(1000/60);last=performance.now();simAccumulator=0;};
-window.render_game_to_text=()=>JSON.stringify({coordinates:'origin top-left; x right, y down; tile 32px',mode:game.state,room:game.room,player:{x:game.player.x,y:game.player.y,vx:game.player.vx,vy:game.player.vy,dir:game.player.dir,onGround:game.player.onGround,hp:game.player.hp,w:game.player.w,h:game.player.h},abilities:game.abilities,clues:game.clues.length,totalClues:game.totalClues,projectiles:game.projectiles.length,bossProjectiles:game.bossProjectiles.length,guardStunned:game.guardStunned,boss:game.boss?{hp:game.boss._hp,maxHp:game.boss._maxHp,defeated:!!game.boss.defeated}:null,entities:ROOMS[game.room].entities.filter(e=>['npc','guard','door','enemy','ability','clue','finish'].includes(e.type)&&!e.defeated&&!e._collected).map(e=>({type:e.type,name:e.name||e.key||null,x:e._x??e.x*TILE,y:e.y*TILE,to:e.to||null,locked:e.locked||null})),art:window.HD2D?.describe()||{loaded:[]}});
+window.render_game_to_text=()=>JSON.stringify({coordinates:'origin top-left; x right, y down; tile 32px',mode:game.state,room:game.room,player:{x:game.player.x,y:game.player.y,vx:game.player.vx,vy:game.player.vy,dir:game.player.dir,onGround:game.player.onGround,hp:game.player.hp,w:game.player.w,h:game.player.h},abilities:game.abilities,clues:game.clues.length,totalClues:game.totalClues,projectiles:game.projectiles.length,bossProjectiles:game.bossProjectiles.length,guardStunned:game.guardStunned,boss:game.boss?{hp:game.boss._hp,maxHp:game.boss._maxHp,defeated:!!game.boss.defeated,move:game.boss._move,warning:game.boss._warning,hidden:!!game.boss._hidden,x:game.boss._x,y:game.boss._y}:null,entities:ROOMS[game.room].entities.filter(e=>['npc','guard','door','enemy','ability','clue','finish'].includes(e.type)&&!e.defeated&&!e._collected).map(e=>({type:e.type,name:e.name||e.key||null,x:e._x??e.x*TILE,y:e.y*TILE,to:e.to||null,locked:e.locked||null})),art:window.HD2D?.describe()||{loaded:[]}});
 
 /* ---------- FIRED ---------- */
 function firedGame() {
@@ -3779,14 +3745,14 @@ addEventListener('blur',releaseAllInputs);
 document.addEventListener('visibilitychange',()=>{releaseAllInputs();last=performance.now();simAccumulator=0;if(document.hidden){Music.suspend();window.GameAudio?.stopAll();}else{Music.resume();}});
 requestAnimationFrame(loop);
 </script>
-<script src="story-data.js?v=3"></script>
-<script src="story.js?v=3"></script>
+<script src="story-data.js?v=4"></script>
+<script src="story.js?v=4"></script>
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
-<script src="hd2d.js?v=proportions-4"></script>
-<script src="audio/manifest.js?v=story-3"></script>
-<script src="audio/combat-manifest.js?v=1"></script>
+<script src="hd2d.js?v=boss-4"></script>
+<script src="audio/manifest.js?v=boss-4"></script>
+<script src="audio/combat-manifest.js?v=boss4-1"></script>
 <script src="audio.js?v=combat-1"></script>
-<script src="combat-audio.js?v=1"></script>
+<script src="combat-audio.js?v=boss4-1"></script>
 <script src="illustrations.js?v=context-3"></script>
 <script>document.getElementById("startBtn").disabled=!(window.GameStory&&window.GameAudio&&window.HD2D&&GameStory.allSpoken.every(t=>GAME_AUDIO.voices[t]));</script>
 </body>

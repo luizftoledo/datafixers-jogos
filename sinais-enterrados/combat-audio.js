@@ -1,7 +1,7 @@
 /* Brief event sounds. Story dialogue always has priority over combat barks. */
 (()=>{'use strict';
 const data=window.COMBAT_AUDIO;if(!data||!window.GameAudio)return;
-let voiceAt=-Infinity;const playedAt=new Map(),bags=new Map(),previous=new Map(),counts={effects:0,barks:0,rejected:0},events={};
+let pendingEnrage=false;let voiceAt=-Infinity;const playedAt=new Map(),bags=new Map(),previous=new Map(),counts={effects:0,barks:0,rejected:0},events={};
 const caption=document.createElement('div');caption.id='combatCaption';caption.hidden=true;caption.setAttribute('aria-live','polite');document.getElementById('stage').append(caption);
 const style=document.createElement('style');style.textContent='#combatCaption{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:7;max-width:85%;padding:7px 10px;background:rgba(5,8,17,.9);border:1px solid #74634b;color:#f0e2c7;font:12px/1.4 monospace;text-align:center;pointer-events:none}@media(max-width:720px){#combatCaption{bottom:8px;font-size:11px;max-width:80%}}';document.head.append(style);
 function clearCaption(){caption.hidden=true;caption.textContent='';clearTimeout(clearCaption.timer);}
@@ -19,7 +19,9 @@ window.CombatAudio={
  enemyHurt(e){fx([e.kind==='assessor'?'assessor-hurt':'lobista-hurt'],'enemy-hurt',90);},
  contact(e){fx([e.kind==='assessor'?'assessor-attack':'lobista-attack'],'enemy-contact',120);playerHurt();},
  guardFlash(){if(ROOMS[game.room].entities.some(e=>e.type==='guard'&&Math.abs(e.x*TILE-game.player.x)<400))fx(['guard-stun'],'guard-stun',1500);},
- enrage(){fx(['boss-enrage'],'boss-enrage',1500);say('enrage');},
+ enrage(){fx(['boss-enrage'],'boss-enrage',1500);pendingEnrage=true;},
+ tick(){if(pendingEnrage&&say('enrage'))pendingEnrage=false;},
+ reset(){pendingEnrage=false;},
  describe:()=>({...counts,lastVoiceAt:voiceAt,caption:caption.hidden?null:caption.textContent,recent:[...playedAt.keys()]})
 };
 })();

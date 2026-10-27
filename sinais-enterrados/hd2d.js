@@ -74,6 +74,13 @@ const api={ready,status,actor,prop,tick(dt){now+=dt;for(const e of ROOMS[game.ro
  }
  if(e.type==='boss'){
   if(!available('enemies'))return false;
+  const target=e._targetX;
+  if(e._warning||e._hidden){
+   const labels={jump:'SALTO · AFASTE-SE DA MARCA',vanish:'TELEPORTE',volley:'RAJADA',dash:'INVESTIDA · PULE'};
+   hint(labels[e._warning]||'REAPARECE AQUI',e._x+18,(e._y??ey)-180,'#ffe384');
+   if(target!=null&&(e._hidden||['jump','vanish'].includes(e._warning))){ctx.save();ctx.strokeStyle='#ffe384';ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.strokeRect(target-24,ey-145,84,177);ctx.restore();}
+  }
+  if(e._hidden)return true;
   if(e._invuln>0&&Math.floor(e._invuln/3)%2===0)return true;
   const x=e._x??ex,y=e._y??ey,fall=e._fall||0,stunned=(e._stunned||0)>0;
   shadow(x+18,y+32,32);actor('enemies',12+(stunned||e.defeated?2:Math.floor((e._artDistance||0)/24)%6),x+18,y+32,176,e._dir||-1,e.defeated?.65:1,e.defeated?fall*.8:0);

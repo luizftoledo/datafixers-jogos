@@ -81,12 +81,28 @@ window.STORY_DATA={
     {
       "speaker": "CARLÃO",
       "text": "Quem cuida das contas é o instituto. Me mande isso por escrito."
+    },
+    {
+      "speaker": "CARLÃO",
+      "text": "Repórterzinho. Você não tem ideia de com quem está mexendo."
+    },
+    {
+      "speaker": "CARLÃO",
+      "text": "Meu advogado já tem seu nome. Vou processar você e o Jornalzão do Cidadão por calúnia, difamação e dano moral."
+    },
+    {
+      "speaker": "CARLÃO",
+      "text": "Some daqui antes que eu chame meus aliados."
     }
   ],
   "shouts": [
     {
       "speaker": "CARLÃO",
       "text": "Some daqui!"
+    },
+    {
+      "speaker": "CARLÃO",
+      "text": "O cara quer quebrar meu esquema, velho."
     }
   ],
   "closing": [
