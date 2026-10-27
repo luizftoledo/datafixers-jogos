@@ -30,18 +30,18 @@ const api={ready,status,actor,prop,tick(dt){now+=dt;for(const e of ROOMS[game.ro
  const walk=Math.abs(p.vx)>.4&&p.onGround;
  const index=game.flashLight>.6?10:game.recPulse>.85?11:!p.onGround?7:walk?Math.floor((p.walkDistance||0)/24)%6:6;
  p._artFrame=index;shadow(p.x+p.w/2,p.y+p.h+1,24);
- actor('hero',index,p.x+p.w/2,p.y+p.h,160,p.dir);
+ actor('hero',index,p.x+p.w/2,p.y+p.h,ACTOR_METRICS.adult,p.dir);
  return true;
 },entity(e,ex,ey){
  if(['desk','shelf','tree','car'].includes(e.type)&&available('rooms'))return true;
  if(e.type==='door'){
   const locked=e.locked==='guard'?game.guardStunned<=0:!!(e.locked&&!game.abilities[e.locked]);
   const feet=ey+32,cx=Math.max(28,Math.min(W-28,ex+16));
-  ctx.save();ctx.fillStyle='#11171c';ctx.fillRect(cx-24,feet-182,48,182);
-  ctx.strokeStyle=locked?'#806942':'#ac8b45';ctx.lineWidth=2;ctx.strokeRect(cx-24,feet-182,48,182);
-  ctx.fillStyle='#5d5340';ctx.fillRect(cx-20,feet-178,3,174);
-  ctx.fillStyle='#d4a017';ctx.beginPath();ctx.arc(cx+(e.dir==='left'?-14:14),feet-84,2.5,0,Math.PI*2);ctx.fill();
-  if(Math.abs(game.player.x+game.player.w/2-cx)<70)hint(locked?'TRANCADA':'[E] '+(e.dir==='left'?'←':'→'),cx,feet-193);
+  ctx.save();ctx.fillStyle='#11171c';ctx.fillRect(cx-24,feet-116,48,116);
+  ctx.strokeStyle=locked?'#806942':'#ac8b45';ctx.lineWidth=2;ctx.strokeRect(cx-24,feet-116,48,116);
+  ctx.fillStyle='#5d5340';ctx.fillRect(cx-20,feet-112,3,108);
+  ctx.fillStyle='#d4a017';ctx.beginPath();ctx.arc(cx+(e.dir==='left'?-14:14),feet-52,2.5,0,Math.PI*2);ctx.fill();
+  if(Math.abs(game.player.x+game.player.w/2-cx)<70)hint(locked?'TRANCADA':'[E] '+(e.dir==='left'?'←':'→'),cx,feet-128);
   ctx.restore();return true;
  }
  if(e.type==='clue'){
@@ -59,17 +59,17 @@ const api={ready,status,actor,prop,tick(dt){now+=dt;for(const e of ROOMS[game.ro
   const talking=game.state==='dialog'&&(game.dialog?.currentWho||game.dialog?.who)?.includes(e.name);
   const index=row*4+(talking?[0,1,2,1][Math.floor(now/360)%4]:0);
   const dir=game.player.x<ex?-1:1,stunned=e.type==='guard'&&game.guardStunned>0;
-  shadow(ex+16,ey+33,24);actor('npcs',index,ex+16,ey+32,160,dir,stunned?.8:1);
+  shadow(ex+16,ey+33,24);actor('npcs',index,ex+16,ey+32,ACTOR_METRICS.adult,dir,stunned?.8:1);
   const near=Math.abs(game.player.x+game.player.w/2-ex-16)<TILE*1.6;
-  if(near||stunned)hint(stunned?'ATORDOADA':'[E] '+(e.displayName||e.name),ex+16,ey-143,stunned?'#ffe6a0':'#f3e8cb');return true;
+  if(near||stunned)hint(stunned?'ATORDOADA':'[E] '+(e.displayName||e.name),ex+16,ey-90,stunned?'#ffe6a0':'#f3e8cb');return true;
  }
  if(e.type==='enemy'){
   if(e.defeated)return true;if(!available('enemies'))return false;
   const x=e._x??ex,stunned=(e.stunned||0)>0,row=(e.kind==='assessor'||e.name==='ASSESSOR')?1:0;
   const index=row*6+(stunned?2:Math.floor((e._artDistance||0)/24)%6);
-  shadow(x+16,ey+33,24);actor('enemies',index,x+16,ey+32,160,e._dir||1,stunned?.68:1);
-  if(stunned)hint('ATORDOADO',x+16,ey-143,'#ffe6a0');
-  if(row===1&&(e._hp??e.hp??1)>1){ctx.save();for(let i=0;i<(e.hp||3);i++){ctx.fillStyle=i<(e._hp??e.hp)?'#d4a5ed':'#3b3148';ctx.fillRect(x+2+i*12,ey-135,9,5);}ctx.restore();}
+  shadow(x+16,ey+33,24);actor('enemies',index,x+16,ey+32,ACTOR_METRICS.adult,e._dir||1,stunned?.68:1);
+  if(stunned)hint('ATORDOADO',x+16,ey-90,'#ffe6a0');
+  if(row===1&&(e._hp??e.hp??1)>1){ctx.save();for(let i=0;i<(e.hp||3);i++){ctx.fillStyle=i<(e._hp??e.hp)?'#d4a5ed':'#3b3148';ctx.fillRect(x+2+i*12,ey-84,9,5);}ctx.restore();}
   return true;
  }
  if(e.type==='boss'){
@@ -77,21 +77,27 @@ const api={ready,status,actor,prop,tick(dt){now+=dt;for(const e of ROOMS[game.ro
   const target=e._targetX;
   if(e._warning||e._hidden){
    const labels={jump:'SALTO · AFASTE-SE DA MARCA',vanish:'TELEPORTE',volley:'RAJADA',dash:'INVESTIDA · PULE'};
-   hint(labels[e._warning]||'REAPARECE AQUI',e._x+18,(e._y??ey)-180,'#ffe384');
-   if(target!=null&&(e._hidden||['jump','vanish'].includes(e._warning))){ctx.save();ctx.strokeStyle='#ffe384';ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.strokeRect(target-24,ey-145,84,177);ctx.restore();}
+   hint(labels[e._warning]||'REAPARECE AQUI',e._x+18,(e._y??ey)-128,'#ffe384');
+   if(target!=null&&(e._hidden||['jump','vanish'].includes(e._warning))){ctx.save();ctx.strokeStyle='#ffe384';ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.strokeRect(target-16,ey-100,64,132);ctx.restore();}
   }
   if(e._hidden)return true;
   if(e._invuln>0&&Math.floor(e._invuln/3)%2===0)return true;
   const x=e._x??ex,y=e._y??ey,fall=e._fall||0,stunned=(e._stunned||0)>0;
-  shadow(x+18,y+32,32);actor('enemies',12+(stunned||e.defeated?2:Math.floor((e._artDistance||0)/24)%6),x+18,y+32,176,e._dir||-1,e.defeated?.65:1,e.defeated?fall*.8:0);
-  hint(e.defeated?'SE RETIRA':e._enraged?'ENFURECIDO':'DEPUTADO',x+18,y-158,e._enraged?'#ffc3ab':'#f3e8cb');return true;
+  shadow(x+18,y+32,32);actor('enemies',12+(stunned||e.defeated?2:Math.floor((e._artDistance||0)/24)%6),x+18,y+32,ACTOR_METRICS.boss,e._dir||-1,e.defeated?.65:1,e.defeated?fall*.8:0);
+  hint(e.defeated?'SE RETIRA':e._enraged?'ENFURECIDO':'DEPUTADO',x+18,y-104,e._enraged?'#ffc3ab':'#f3e8cb');return true;
  }
  return false;
 },projectile(p,boss=false){
  if(!available('props'))return false;const a=Math.min(1,p.life/18);
- ctx.save();if(boss){glow(p.x,p.y,20,'rgba(220,102,82,.24)');prop(p.kind==='discurso'?7:0,p.x,p.y,p.kind==='discurso'?33:22,p.rot||0,a);}else if(p.weapon==='ped'){glow(p.x,p.y,20,'rgba(249,195,88,.27)');prop(3,p.x,p.y,26,(p.age||0)*.045*(p.dir||1),a);}else{prop(7,p.x,p.y,38,0,a);}ctx.restore();return true;
+ ctx.save();if(boss){
+  const rx=p.radiusX||14,ry=p.radiusY||14;
+  glow(p.x,p.y,30,'rgba(255,105,48,.45)');
+  ctx.fillStyle=p.groundWave?'#ff7a25':'#fff1b2';ctx.strokeStyle='#fff5dd';ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(p.x,p.y,rx+2,ry+2,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  prop(p.kind==='discurso'?7:0,p.x,p.y,p.groundWave?42:32,p.rot||0,a);
+ }else if(p.weapon==='ped'){glow(p.x,p.y,20,'rgba(249,195,88,.27)');prop(3,p.x,p.y,26,(p.age||0)*.045*(p.dir||1),a);}else{prop(7,p.x,p.y,38,0,a);}ctx.restore();return true;
 },effects(){
- if(!available('props'))return;const p=game.player,x=p.x+p.w/2,y=p.y+p.h-96;
+ if(!available('props'))return;const p=game.player,x=p.x+p.w/2,y=p.y+p.h-ACTOR_METRICS.shotHeight;
  if(game.flashLight>.1)prop(6,x+p.dir*18,y,90*game.flashLight,now*.001,Math.min(.8,game.flashLight));
  if(game.recPulse>.1)prop(7,x,y,40+(1-game.recPulse)*115,0,game.recPulse*.7);
 },describe(){return {version:'hd2d-1',loaded:[...status.loaded],failed:[...status.failed],playerFrame:game.player._artFrame??null,walkingFrames:6,renderScale:'160px adult, 176px boss; full-room camera',anchors:'measured feet baseline and head axis',physics:'foot capsule for platforms; scaled body bounds for combat'};}};

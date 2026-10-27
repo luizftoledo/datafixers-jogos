@@ -1762,11 +1762,13 @@ function rectVsTiles(p, dx, dy) {
 }
 function playerBBox(p) { return { l:p.x, r:p.x+p.w, t:p.y, b:p.y+p.h }; }
 
-// Foot capsule handles platforms; body bounds match the visible actors for combat.
+// One shared scale for actor rendering, combat bounds and weapon height.
+const ACTOR_METRICS=Object.freeze({adult:96,boss:104,body:68,bossBody:82,shotHeight:52});
+// Foot capsule handles platforms; combat bounds stay inside the visible body.
 function combatRect(e,isPlayer=false){
  const feet=isPlayer?e.y+e.h:(e._y??e.y*TILE)+TILE;
  const cx=isPlayer?e.x+e.w/2:(e._x??e.x*TILE)+16;
- const height=e.type==='boss'?156:136,width=e.type==='boss'?72:isPlayer?36:44;
+ const height=e.type==='boss'?ACTOR_METRICS.bossBody:ACTOR_METRICS.body,width=e.type==='boss'?44:isPlayer?24:28;
  return {x:cx-width/2,y:feet-height,w:width,h:height};
 }
 function entityRect(e) {
@@ -1800,14 +1802,16 @@ function update(dt) {
   if (p.onGround) p.coyote = 7;             // grace 7 frames after leaving ground
   else if (p.coyote > 0) p.coyote--;
   if (p.jumpBuffer > 0 && p.coyote > 0) {
-    p.vy = -8.6;
+    p.vy = -11.2;
+    p.jumpRiseFrames = 0;
     p.onGround = false;
     p.jumpBuffer = 0;
     p.coyote = 0;
     SFX.jump();
   }
   // Variable jump (release early = shorter)
-  if (p.vy < 0 && !(keys['arrowup']||keys['w']||keys[' '])) p.vy *= 0.84;
+  if(p.vy<0)p.jumpRiseFrames=(p.jumpRiseFrames||0)+1;
+  if (p.vy < 0 && p.jumpRiseFrames>8 && !(keys['arrowup']||keys['w']||keys[' '])) p.vy *= 0.84;
 
   // Gravity
   p.vy += 0.45;
@@ -1853,7 +1857,7 @@ function update(dt) {
     game.recCooldown = 22;
     // shoot sound-wave projectile in facing direction
     game.projectiles.push({
-      x: p.x + p.w/2+p.dir*18, y: p.y+p.h-94,
+      x: p.x + p.w/2+p.dir*18, y: p.y+p.h-ACTOR_METRICS.shotHeight,
       vx: (p.dir > 0 ? 7.5 : -7.5),
       life: 50, dir: p.dir, age: 0,
       weapon: 'rec', dmg: 1,
@@ -1868,7 +1872,7 @@ function update(dt) {
   if (pressed['c'] && game.abilities.ped && game.pedCooldown <= 0) {
     game.pedCooldown = 50;
     game.projectiles.push({
-      x: p.x + p.w/2+p.dir*18, y: p.y+p.h-90,
+      x: p.x + p.w/2+p.dir*18, y: p.y+p.h-ACTOR_METRICS.shotHeight,
       vx: (p.dir > 0 ? 5.6 : -5.6),
       vy: -3.6,
       gravity: 0.18,
@@ -1887,7 +1891,7 @@ function update(dt) {
     for (const e of ROOMS[game.room].entities) {
       if (e.type === 'enemy' && e.kind === 'assessor' && !e.defeated) {
         e.defeated = true;
-        flashSparks(e._x + TILE/2, e.y*TILE + TILE-90, '#ffffff');
+        flashSparks(e._x + TILE/2, e.y*TILE + TILE-ACTOR_METRICS.shotHeight, '#ffffff');
         cleared++;
       }
     }
@@ -1967,11 +1971,11 @@ function update(dt) {
         e._hp = (e._hp ?? 1) - (proj.dmg || 1);
         if (e._hp <= 0) {
           e.defeated = true;
-          flashSparks(e._x + TILE/2, e.y*TILE + TILE-90, '#d4a017');
+          flashSparks(e._x + TILE/2, e.y*TILE + TILE-ACTOR_METRICS.shotHeight, '#d4a017');
           toast(e.kind === 'assessor' ? 'aliado neutralizado' : 'lobista exposto');
           if(window.CombatAudio) CombatAudio.enemyHurt(e); else SFX.enemyDown();
         } else {
-          flashSparks(e._x + TILE/2, e.y*TILE + TILE-90, '#c0392b');
+          flashSparks(e._x + TILE/2, e.y*TILE + TILE-ACTOR_METRICS.shotHeight, '#c0392b');
           e.stunned = Math.max(e.stunned || 0, 14);
           if(window.CombatAudio) CombatAudio.enemyHurt(e); else SFX.hit();
         }
@@ -2020,7 +2024,7 @@ function update(dt) {
       const knock = (p.x + p.w/2 < e._x + TILE/2) ? -1 : 1;
       p.vx = knock * 5.5;
       p.vy = -5.5;
-      flashSparks(p.x+p.w/2, p.y+p.h-90, '#c0392b');
+      flashSparks(p.x+p.w/2, p.y+p.h-ACTOR_METRICS.shotHeight, '#c0392b');
       game.shake = 8;
       pulseHearts();
       if(window.CombatAudio) CombatAudio.contact(e); else SFX.hit();
@@ -2297,7 +2301,7 @@ function updateBoss(dt) {
   const live=ROOMS[game.room].entities.filter(e=>e.type==='enemy'&&e.kind==='assessor'&&!e.defeated).length;
   if(--b._spawnTimer<=0){if(live<(b._enraged?3:2))spawnAssessor();b._spawnTimer=b._enraged?230:310;}
   const recover=(frames=55)=>{b._move='recover';b._moveT=frames;b._warning=null;b._hidden=false;b._hitsSinceMove=0;};
-  const wave=(dir)=>{spawnDiscurso(b,dir);const shot=game.bossProjectiles.at(-1);shot.y=b._groundY+TILE-18;shot.vx=dir*6.5;};
+  const wave=(dir)=>{spawnDiscurso(b,dir);const shot=game.bossProjectiles.at(-1);shot.y=b._groundY+TILE-16;shot.vx=dir*6;shot.radiusX=22;shot.radiusY=12;shot.groundWave=true;};
   b._moveT=(b._moveT??1)-1;
   if(b._move==='recover'){
     if(b._moveT<=0){
@@ -2341,7 +2345,7 @@ function spawnProcesso(b) {
   const dir = (px < b._x + 18) ? -1 : 1;
   game.bossProjectiles.push({
     x: b._x + 18 + dir*16,
-    y: (b._y !== undefined ? b._y : b.y*TILE)+TILE-104,
+    y: (b._y !== undefined ? b._y : b.y*TILE)+TILE-ACTOR_METRICS.shotHeight,
     vx: dir * 3.4,
     vy: -4.7,
     gravity: 0.18,
@@ -2356,7 +2360,7 @@ function spawnDiscurso(b, dir) {
   dir = dir || b._dir || 1;
   game.bossProjectiles.push({
     x: b._x + 18 + dir * 18,
-    y: (b._y !== undefined ? b._y : b.y*TILE)+TILE-104,
+    y: (b._y !== undefined ? b._y : b.y*TILE)+TILE-ACTOR_METRICS.shotHeight,
     vx: dir * 5.6,
     vy: 0,
     gravity: 0,
@@ -2364,6 +2368,7 @@ function spawnDiscurso(b, dir) {
     rot: 0,
     rotV: dir * 0.08,
     kind: 'discurso',
+    radiusX:18,radiusY:12,
   });
   SFX.discurso();
 }
@@ -2418,7 +2423,8 @@ function updateBossProjectiles() {
   if (p.invuln <= 0) {
     for (const bp of game.bossProjectiles) {
       if (bp.life <= 0) continue;
-      const bpr = { x: bp.x-10, y: bp.y-10, w:20, h:20 };
+      const rx=bp.radiusX||14,ry=bp.radiusY||14;
+      const bpr = { x: bp.x-rx, y: bp.y-ry, w:rx*2, h:ry*2 };
       const pr = combatRect(p,true);
       if (overlap(bpr, pr)) {
         p.hp--;
@@ -2426,7 +2432,7 @@ function updateBossProjectiles() {
         const knock = (p.x + p.w/2 < bp.x) ? -1 : 1;
         p.vx = knock * 4.5;
         p.vy = -4.5;
-        flashSparks(p.x+p.w/2, p.y+p.h-90, '#c0392b');
+        flashSparks(p.x+p.w/2, p.y+p.h-ACTOR_METRICS.shotHeight, '#c0392b');
         game.shake = 8;
         pulseHearts();
         if(window.CombatAudio) CombatAudio.playerHurt(); else SFX.hit();
@@ -3599,7 +3605,7 @@ const TUTORIAL_STEPS = [
   { target: null, title: 'COMECE A APURAÇÃO',
     text: 'Você trabalha como <b>repórter de investigação</b>. Vamos ver rapidinho como se joga antes de começar.' },
   { target: null, title: 'COMO ANDAR',
-    text: 'Mexa com <b>← →</b> e pule com <b>↑ / W / espaço</b>. No celular, use os botões na parte de baixo da tela.' },
+    text: 'Mexa com <b>← →</b> e pule com <b>↑ / W / espaço</b>. No celular, use os botões na parte de baixo da tela. Segure o botão de pulo para saltar mais alto.' },
   { target: null, title: 'INTERAGIR',
     text: 'Chegue perto de <b>pessoas</b> e <b>portas</b> e aperte <b>E</b> (ou o botão <b>E · INTERAGIR</b>) pra conversar e passar de sala.' },
   { target: '.hud-left', title: 'SEU PAINEL',
@@ -3748,7 +3754,7 @@ requestAnimationFrame(loop);
 <script src="story-data.js?v=4"></script>
 <script src="story.js?v=4"></script>
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
-<script src="hd2d.js?v=boss-4"></script>
+<script src="hd2d.js?v=scale-5"></script>
 <script src="audio/manifest.js?v=boss-4"></script>
 <script src="audio/combat-manifest.js?v=boss4-1"></script>
 <script src="audio.js?v=combat-1"></script>
