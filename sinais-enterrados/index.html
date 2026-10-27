@@ -783,6 +783,11 @@
  .room-name{font-size:20px}.room-name .sub{font-size:6px;letter-spacing:.15em}
  .touch-ctrl{padding:20px 16px;max-height:calc(100dvh - 56.667vw)}
 }
+@media (orientation:landscape) and (max-height:500px){
+ #stage{width:min(100vw,176.470588dvh);height:auto;max-height:100dvh;flex:0 0 auto;aspect-ratio:960/544}
+ #shell{justify-content:center}
+ .tc-btn{backdrop-filter:none}
+}
 </style></head>
 <body>
 
