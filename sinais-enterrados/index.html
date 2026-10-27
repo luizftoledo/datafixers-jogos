@@ -1810,6 +1810,7 @@ function update(dt) {
       }
       spawnFlashParticles();
       SFX.flash();
+      window.CombatAudio?.guardFlash();
     } else {
       toast('câmera ainda não — passa nas consultas públicas');
     }
@@ -1936,11 +1937,11 @@ function update(dt) {
           e.defeated = true;
           flashSparks(e._x + TILE/2, e.y*TILE + TILE/2, '#d4a017');
           toast(e.kind === 'assessor' ? 'aliado neutralizado' : 'lobista exposto');
-          SFX.enemyDown();
+          if(window.CombatAudio) CombatAudio.enemyHurt(e); else SFX.enemyDown();
         } else {
           flashSparks(e._x + TILE/2, e.y*TILE + TILE/2, '#c0392b');
           e.stunned = Math.max(e.stunned || 0, 14);
-          SFX.hit();
+          if(window.CombatAudio) CombatAudio.enemyHurt(e); else SFX.hit();
         }
         proj.life = 0;
         break;
@@ -1990,7 +1991,7 @@ function update(dt) {
       flashSparks(p.x+p.w/2, p.y+p.h/2, '#c0392b');
       game.shake = 8;
       pulseHearts();
-      SFX.hit();
+      if(window.CombatAudio) CombatAudio.contact(e); else SFX.hit();
       if (p.hp <= 0) {
         SFX.gameOver();
         firedGame();
@@ -2351,6 +2352,7 @@ function updateBoss(dt) {
   // enraged trigger at half HP
   if (!b._enraged && b._hp <= b._maxHp / 2) {
     b._enraged = true;
+    window.CombatAudio?.enrage();
     toast('Carlão enfurecido — vai chamar mais aliados');
     game.shake = 8;
   }
@@ -2449,7 +2451,7 @@ function updateBossProjectiles() {
         flashSparks(p.x+p.w/2, p.y+p.h/2, '#c0392b');
         game.shake = 8;
         pulseHearts();
-        SFX.hit();
+        if(window.CombatAudio) CombatAudio.playerHurt(); else SFX.hit();
         bp.life = 0;
         if (p.hp <= 0) {
           SFX.gameOver();
@@ -3771,7 +3773,9 @@ requestAnimationFrame(loop);
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
 <script src="hd2d.js?v=perf-audio-2"></script>
 <script src="audio/manifest.js?v=story-2"></script>
-<script src="audio.js?v=movement-3"></script>
+<script src="audio/combat-manifest.js?v=1"></script>
+<script src="audio.js?v=combat-1"></script>
+<script src="combat-audio.js?v=1"></script>
 <script src="illustrations.js?v=1"></script>
 </body>
 </html>
