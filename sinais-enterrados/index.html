@@ -43,7 +43,7 @@
   canvas {
     display:block; width:100%; height:100%;
     background:#0a0e1a;
-    image-rendering:pixelated;
+    image-rendering:auto;
   }
   /* CRT scanlines + vignette */
   .scan {
@@ -54,7 +54,7 @@
     mix-blend-mode:multiply;
   }
   .grain {
-    position:absolute; inset:0; pointer-events:none; opacity:.06;
+    position:absolute; inset:0; pointer-events:none; opacity:.02;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   }
 
@@ -759,13 +759,37 @@
     #tutorialBox { max-width:none; }
   }
 </style>
-</head>
+<style>.hd-vignette{background:radial-gradient(ellipse at center,transparent 65%,rgba(4,9,18,.25) 100%);mix-blend-mode:normal}.grain{opacity:.015}</style>
+<style>
+#titleScreen{padding:24px;overflow-y:auto;justify-content:center;gap:0}
+#titleScreen h1{font-size:clamp(28px,4.5vw,48px)}
+#titleScreen .tag{margin-bottom:18px;letter-spacing:.25em}
+#titleScreen p{font-size:13px;line-height:1.65;margin-bottom:4px;max-width:600px}
+#titleScreen .keys{margin:16px 0;font-size:10px}
+#titleScreen .difficulty{margin:2px 0 18px}
+#titleScreen .credit{margin-top:14px;letter-spacing:.1em}
+@media(max-width:640px){#titleScreen{padding:18px;justify-content:flex-start}#titleScreen h1{font-size:27px}#titleScreen .tag{font-size:8px;letter-spacing:.1em;margin-bottom:12px}#titleScreen p{font-size:11px}#titleScreen .keys{font-size:8px;gap:4px}#titleScreen .btn{flex-shrink:0}#titleScreen .credit{font-size:8px}}
+</style><style>
+@media (orientation:portrait) and (max-width:720px){
+ #stage{height:auto;flex:0 0 auto;aspect-ratio:960/544}
+ #stage canvas{width:100%;height:100%;object-fit:contain}
+ .hud{inset:6px 6px auto;padding:0;gap:4px;font-size:8px}
+ .hud-left{max-width:40%;gap:3px;align-content:flex-start}
+ .hud-right{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;max-width:55%;margin-right:25px}
+ .chip,.ability{padding:3px 5px;font-size:7px;letter-spacing:.03em;white-space:nowrap}
+ .ability{padding-right:12px;overflow:hidden}.ability .key{font-size:6px;padding:0 2px;margin-right:3px}
+ .ability::after{right:2px;font-size:6px}.hearts{padding:3px 5px}.hearts span{font-size:8px}
+ #audioBtn{top:6px;right:6px;padding:4px;font-size:10px}
+ .room-name{font-size:20px}.room-name .sub{font-size:6px;letter-spacing:.15em}
+ .touch-ctrl{padding:20px 16px;max-height:calc(100dvh - 56.667vw)}
+}
+</style></head>
 <body>
 
 <div id="shell">
 <div id="stage">
   <canvas id="game" width="960" height="544"></canvas>
-  <div class="scan"></div>
+  <div class="scan hd-vignette"></div>
   <div class="grain"></div>
 
   <!-- AUDIO CONTROLS (persistente — visível no título e no jogo) -->
@@ -829,7 +853,7 @@
   <div class="overlay" id="titleScreen">
     <h1>Sinais Enterrados</h1>
     <div class="tag">um jogo de investigação · jornalzão do cidadão</div>
-    <p>Você trabalha como repórter de investigação do <b>Jornalzão do Cidadão</b>. Uma denúncia anônima caiu no canal seguro da redação: uma <b style="color:#d4a017">emenda parlamentar</b> — a parte do Orçamento que cada deputado indica pra onde vai — do deputado <b style="color:#d4a017">Carlão do Pastel</b> teria ido parar numa ONG de fachada. Pra provar (ou descartar) a história, você vai usar as ferramentas reais do jornalismo: <b>Portal da Transparência</b>, consulta pública de <b>CNPJ</b>, pedidos pela <b>Lei de Acesso à Informação (LAI)</b>, auditorias do <b>TCU</b> e fontes. Lobistas e aliados do deputado vão tentar te parar antes da publicação.</p>
+    <p>Uma denúncia anônima aponta possíveis desvios de dinheiro público. Investigue registros, procure fontes e reúna documentos. Use a câmera, o gravador e pedidos de informação para chegar à publicação.</p>
     <div class="keys">
       <span><b>← →</b> mover</span>
       <span><b>↑ / W</b> pular</span>
@@ -880,9 +904,9 @@
     <div class="end-paper">
       <div class="end-kicker">EXCLUSIVO · JORNALZÃO DO CIDADÃO</div>
       <h2 class="end-headline" id="endHead">Emenda de R$ 4 mi de Carlão do Pastel parou em ONG presidida por ex-motorista do gabinete</h2>
-      <div class="end-byline" id="endByline">Por Luiz Toledo · Jornalzão do Cidadão · com documentos públicos, pedidos de LAI, fontes e auditoria do TCU</div>
+      <div class="end-byline" id="endByline">Por Luiz Toledo · Jornalzão do Cidadão · com documentos públicos, pedidos de LAI, fontes e auditoria do Tribunal de Contas</div>
       <div class="end-article" id="cluesRecap"></div>
-      <p class="end-closing">Procurado pessoalmente e por escrito, o deputado Carlão do Pastel ameaçou processar o jornal e não respondeu às perguntas enviadas até o fechamento desta edição. O TCU, o Instituto Plenitude e a Pastel &amp; Cia também foram procurados. O espaço segue aberto para manifestação.</p>
+      <p class="end-closing">Procurado pessoalmente e por escrito, o deputado Carlão do Pastel ameaçou processar o jornal e não respondeu às perguntas enviadas até o fechamento desta edição. O Tribunal de Contas, o Instituto Plenitude e a Pastel &amp; Cia também foram procurados. O espaço segue aberto para manifestação.</p>
     </div>
     <div>
       <a class="btn" id="portfolioBtn" href="https://luizftoledo.github.io" target="_blank" rel="noopener">Ver o portfólio →</a>
@@ -1312,10 +1336,10 @@ const ROOMS = {
     ]
   },
 
-  /* ---------- 3 · TCU ---------- */
+  /* ---------- 3 · Tribunal de Contas ---------- */
   forum: {
-    title: 'TCU',
-    sub: 'tribunal de contas da união · auditoria de emendas',
+    title: 'Tribunal de Contas',
+    sub: 'auditoria de recursos públicos',
     palette: { wall:'#15171f', accent:'#2a2e3d', floor:'#1f2330' },
     bg: drawCourthouseBG,
     map: [
@@ -1347,17 +1371,17 @@ const ROOMS = {
       { type:'enemy', x:9,  y:13, range:5, kind:'lobby', speed:0.7, name:'LOBISTA' },
       { type:'enemy', x:18, y:13, range:3, kind:'lobby', speed:0.85, name:'ASSESSOR' },
       { type:'clue', x:5,  y:13, ord:6,
-        method:'TCU · AUDITORIA PRELIMINAR',
-        text:'Auditoria 14/2024 do TCU lista o repasse à Plenitude entre os "casos de atenção". Análise parada desde 12/03/2024, à espera da resposta da entidade auditada.',
-        article:'A Auditoria 14/2024 do Tribunal de Contas da União (TCU) — órgão que fiscaliza o uso do dinheiro federal e publica suas decisões — classificou o repasse à Plenitude como "caso de atenção". A análise está parada desde março de 2024, à espera da resposta da entidade auditada.' },
+        method:'Tribunal de Contas · AUDITORIA PRELIMINAR',
+        text:'Auditoria 14/2024 do Tribunal de Contas lista o repasse à Plenitude entre os "casos de atenção". Análise parada desde 12/03/2024, à espera da resposta da entidade auditada.',
+        article:'A Auditoria 14/2024 do órgão de controle — órgão que fiscaliza o uso do dinheiro federal e publica suas decisões — classificou o repasse à Plenitude como "caso de atenção". A análise está parada desde março de 2024, à espera da resposta da entidade auditada.' },
       { type:'clue', x:11, y:9, ord:7,
-        method:'TCU · RELATÓRIO PRELIMINAR',
+        method:'Tribunal de Contas · RELATÓRIO PRELIMINAR',
         text:'Relatório preliminar da área técnica fala em "indícios não conclusivos de desvio de finalidade". O caso ainda não tem julgamento marcado.',
-        article:'O relatório preliminar da área técnica do TCU fala em "indícios não conclusivos de desvio de finalidade". Não há, até agora, julgamento de mérito agendado.' },
+        article:'O relatório preliminar da área técnica do Tribunal de Contas fala em "indícios não conclusivos de desvio de finalidade". Não há, até agora, julgamento de mérito agendado.' },
       { type:'clue', x:20, y:13, ord:8,
         method:'MEMO INTERNO · DOCUMENTO OBTIDO',
-        text:'Memo de servidor do TCU registra três trocas na relatoria do caso. O relator atual aparece em fotos públicas num jantar de campanha do deputado em 2022.',
-        article:'Memorando interno obtido pela reportagem indica três trocas sucessivas na relatoria do caso dentro do TCU. Registros públicos mostram que o relator atual participou de jantar de campanha do parlamentar em 2022.' },
+        text:'Memo de servidor do Tribunal de Contas registra três trocas na relatoria do caso. O relator atual aparece em fotos públicas num jantar de campanha do deputado em 2022.',
+        article:'Memorando interno obtido pela reportagem indica três trocas sucessivas na relatoria do caso dentro do Tribunal de Contas. Registros públicos mostram que o relator atual participou de jantar de campanha do parlamentar em 2022.' },
       { type:'ability', x:15, y:7, key:'rec', name:'GRAVADOR', text:'Gravador adquirido. [X] dispara ondas sonoras — expõe lobistas, e a fonte só fala com ele ligado.' },
     ]
   },
@@ -1401,7 +1425,7 @@ const ROOMS = {
         ],
         altDialog:[
           '— "Sem gravador, sem prova. Eu não falo no escuro."',
-          '(Volta com o GRAVADOR. Procura no TCU.)',
+          '(Volta com o GRAVADOR. Procura no Tribunal de Contas.)',
         ],
         gives:'doc' },
       { type:'enemy', x:4,  y:13, range:2, kind:'lobby', speed:0.6, name:'LOBISTA' },
@@ -1630,6 +1654,7 @@ function setRoom(name, spawnAt) {
   // tension toast on entering boss room
   if (name === 'confronto') {
     setTimeout(() => {
+      if(game.room !== 'confronto') return;
       const t = document.getElementById('toast');
       t.classList.add('danger');
       toast('última parada — outro lado · gabinete sabe da pauta');
@@ -1737,7 +1762,7 @@ function rectVsTiles(p, dx, dy) {
   p.onGround = false;
   if (dy > 0) {
     for (let cx = Math.floor(l/TILE); cx <= Math.floor((r-1)/TILE); cx++) {
-      const cy = Math.floor((b-1)/TILE);
+      const cy = Math.floor((b-0.001)/TILE);
       if (solid(mapAt(game.room, cx, cy))) { p.y = cy*TILE - p.h; p.vy = 0; p.onGround = true; break; }
     }
   } else if (dy < 0) {
@@ -1801,6 +1826,9 @@ function update(dt) {
   // Fell out (none in current rooms but safe)
   if (p.y > H + 200) respawnPlayer();
 
+  p.walkDistance=(p.walkDistance||0)+(p.onGround?Math.abs(p.vx):0);
+  for(const e of ROOMS[game.room].entities){const x=e._x??e.x*TILE;e._artDistance=(e._artDistance||0)+Math.abs(x-(e._artPreviousX??x));e._artPreviousX=x;}
+
   // Animation timer
   if (Math.abs(p.vx) > 0.4 && p.onGround) p.anim += dt*0.012*Math.abs(p.vx);
   else p.anim *= 0.6;
@@ -1820,7 +1848,7 @@ function update(dt) {
     }
   }
   if (pressed['x'] && !game.abilities.rec) {
-    toast('gravador ainda não — passa no TCU');
+    toast('gravador ainda não — passa no Tribunal de Contas');
   }
   if (pressed['x'] && game.abilities.rec && game.recCooldown <= 0) {
     game.recPulse = 1.0;
@@ -2565,7 +2593,7 @@ function drawCourthouseBG() {
   }
   ctx.fillStyle = 'rgba(212,160,23,.4)';
   ctx.font = '9px JetBrains Mono';
-  ctx.fillText('TCU · TRIBUNAL DE CONTAS DA UNIÃO · CASO PLENITUDE', 14, 14);
+  ctx.fillText('ÓRGÃO DE CONTROLE · AUDITORIA DE RECURSOS PÚBLICOS', 14, 14);
 }
 function drawFieldBG() {
   // night sky gradient
@@ -2711,6 +2739,7 @@ function drawEntities() {
   const room = ROOMS[game.room];
   for (const e of room.entities) {
     const ex = e.x*TILE, ey = e.y*TILE;
+    if(window.HD2D && HD2D.entity(e,ex,ey)) continue;
     switch (e.type) {
       case 'desk':
         ctx.fillStyle = '#5a4a32';
@@ -3138,6 +3167,8 @@ function drawPlayer() {
   ctx.beginPath();
   ctx.ellipse(px+p.w/2, py+p.h+1, p.w*0.6, 3, 0, 0, Math.PI*2);
   ctx.fill();
+  const drawnHD = window.HD2D && HD2D.player(p);
+  if(!drawnHD){
   // legs
   ctx.fillStyle = '#1a1f2e';
   if (step===0) {
@@ -3169,6 +3200,8 @@ function drawPlayer() {
   // glasses
   ctx.strokeStyle = '#d4a017'; ctx.lineWidth = 1;
   ctx.strokeRect(px + (p.dir>0?9:5)+0.5, py+7+0.5, 4, 3);
+
+  }
 
   // flash overlay if firing camera
   if (game.flashLight > 0.4) {
@@ -3207,6 +3240,7 @@ function drawParticles() {
 
 function drawProjectiles() {
   for (const proj of game.projectiles) {
+    if(window.HD2D && HD2D.projectile(proj)) continue;
     const a = Math.min(1, proj.life/30);
     if (proj.weapon === 'ped') {
       // arcing yellow envelope (PEDIDO FORMAL)
@@ -3269,6 +3303,7 @@ function drawProjectiles() {
 
 function drawBossProjectiles() {
   for (const bp of game.bossProjectiles) {
+    if(window.HD2D && HD2D.projectile(bp,true)) continue;
     const a = Math.min(1, bp.life/30);
 
     if (bp.kind === 'discurso') {
@@ -3381,6 +3416,7 @@ function render() {
   drawBossProjectiles();
   drawChiefPulse();
   drawParticles();
+  if(window.HD2D) HD2D.effects();
   drawLighting();
   ctx.restore();
 
@@ -3406,10 +3442,9 @@ function render() {
 }
 
 /* ---------- LOOP ---------- */
-let last = performance.now();
-function loop(t) {
-  const dt = Math.min(40, t-last);
-  last = t;
+let last = performance.now(), simAccumulator=0, manualUntil=0;
+function simulationFrame(dt){
+  if(window.HD2D) HD2D.tick(dt);
   if (game.state === 'play') update(dt);
   if (game.state === 'bossIntro') updateBossIntro();
   if (game.state === 'bossDefeat') updateBossDefeat();
@@ -3433,8 +3468,14 @@ function loop(t) {
       setTimeout(()=>loop._dlgLock=false, 220);
     }
   }
-  requestAnimationFrame(loop);
 }
+function loop(t){
+ const elapsed=Math.max(0,Math.min(100,t-last));last=t;
+ if(t>=manualUntil){simAccumulator+=elapsed;let steps=0;while(simAccumulator>=1000/60&&steps++<6){simulationFrame(1000/60);simAccumulator-=1000/60;}}
+ requestAnimationFrame(loop);
+}
+window.advanceTime=(ms)=>{manualUntil=performance.now()+100;const steps=Math.max(1,Math.round(ms/(1000/60)));for(let i=0;i<steps;i++)simulationFrame(1000/60);last=performance.now();simAccumulator=0;};
+window.render_game_to_text=()=>JSON.stringify({coordinates:'origin top-left; x right, y down; tile 32px',mode:game.state,room:game.room,player:{x:game.player.x,y:game.player.y,vx:game.player.vx,vy:game.player.vy,dir:game.player.dir,onGround:game.player.onGround,hp:game.player.hp,w:game.player.w,h:game.player.h},abilities:game.abilities,clues:game.clues.length,totalClues:game.totalClues,projectiles:game.projectiles.length,bossProjectiles:game.bossProjectiles.length,guardStunned:game.guardStunned,boss:game.boss?{hp:game.boss._hp,maxHp:game.boss._maxHp,defeated:!!game.boss.defeated}:null,entities:ROOMS[game.room].entities.filter(e=>['npc','guard','door','enemy','ability','clue','finish'].includes(e.type)&&!e.defeated&&!e._collected).map(e=>({type:e.type,name:e.name||e.key||null,x:e._x??e.x*TILE,y:e.y*TILE,to:e.to||null,locked:e.locked||null})),art:window.HD2D?.describe()||{loaded:[]}});
 
 /* ---------- FIRED ---------- */
 function firedGame() {
@@ -3645,8 +3686,8 @@ window.addEventListener('resize', () => {
 const ROOM_INTROS = {
   arquivo: { title: 'NOVO · CONSULTAS PÚBLICAS',
     text: 'As pistas desta sala vêm de fontes que <b>qualquer cidadão consulta de graça</b>: o <b>Portal da Transparência</b> (gastos do governo, emenda por emenda), a consulta de <b>CNPJ na Receita</b> e pedidos de <b>LAI</b>. Cuidado: os <b>LOBISTAS</b> apareceram — encostar neles tira uma <b>vida ♥</b>. E há uma <b>ferramenta nova</b> escondida na sala.' },
-  forum: { title: 'NOVO · TCU',
-    text: 'O <b>TCU</b> (Tribunal de Contas da União) fiscaliza o dinheiro federal — auditorias e acórdãos são públicos e citam emendas suspeitas. Um <b>SEGURANÇA</b> tranca a saída: use o <b>FLASH da câmera [Z]</b> pra cegar quem estiver no caminho. Aqui você também encontra o <b>GRAVADOR</b>.' },
+  forum: { title: 'NOVO · Tribunal de Contas',
+    text: 'O <b>Tribunal de Contas</b> (Tribunal de Contas da União) fiscaliza o dinheiro federal — auditorias e acórdãos são públicos e citam emendas suspeitas. Um <b>SEGURANÇA</b> tranca a saída: use o <b>FLASH da câmera [Z]</b> pra cegar quem estiver no caminho. Aqui você também encontra o <b>GRAVADOR</b>.' },
   campo: { title: 'NOVO · CAMPO',
     text: 'A <b>FONTE</b> só fala com o <b>GRAVADOR ligado [X]</b> — e ele também expõe lobistas. Converse com ela pra ganhar o <b>documento</b> que libera o confronto final.' },
   publicacao: { title: 'RETA FINAL · PUBLICAÇÃO',
@@ -3660,7 +3701,7 @@ function maybeShowRoomIntro(name) {
   if (!info || _roomIntroSeen[name]) return;
   if (ROOMS[name] && ROOMS[name].isBoss) return;
   _roomIntroSeen[name] = true;
-  setTimeout(() => { if (game.state === 'play') showInfoCard(info.title, info.text); }, 850);
+  setTimeout(() => { if (game.room === name && game.state === 'play') showInfoCard(info.title, info.text); }, 850);
 }
 function showBossTips() {
   if (showBossTips._seen) return; showBossTips._seen = true;
@@ -3706,7 +3747,11 @@ Music.preload('title');
 Music.play('title');      // tenta tocar a faixa-título (autoplay pode estar travado até o 1º gesto)
 setTimeout(showVolumeHint, 400);   // mostra onde ajustar o volume assim que a tela inicial aparece
 
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;for(const k in pressed)pressed[k]=false;});
+addEventListener('keydown',e=>{if(e.key.toLowerCase()==='f'&&!e.repeat){if(document.fullscreenElement)document.exitFullscreen?.();else document.getElementById('stage').requestFullscreen?.();}});
 requestAnimationFrame(loop);
 </script>
+<script src="art/hd2d/manifest.js?v=1"></script>
+<script src="hd2d.js?v=1"></script>
 </body>
 </html>
