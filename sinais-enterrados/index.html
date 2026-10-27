@@ -858,7 +858,7 @@
   <div class="overlay" id="titleScreen">
     <h1>Sinais Enterrados</h1>
     <div class="tag">um jogo de investigação · jornalzão do cidadão</div>
-    <p>Uma denúncia anônima aponta possíveis desvios de dinheiro público. Investigue registros, procure fontes e reúna documentos. Use a câmera, o gravador e pedidos de informação para chegar à publicação.</p>
+    <p>Um centro de reabilitação já foi inaugurado duas vezes. Continua fechado. Você é Davi, repórter de um jornal local: confira o repasse, encontre quem trabalhou no instituto e leve as perguntas ao deputado que anunciou a obra.</p>
     <div class="keys">
       <span><b>← →</b> mover</span>
       <span><b>↑ / W</b> pular</span>
@@ -873,7 +873,7 @@
         <button type="button" class="diff-btn" data-diff="dificil"><b>DIFÍCIL</b><span>1 dano = fim</span></button>
       </div>
     </div>
-    <button class="btn" id="startBtn">Começar a apuração</button>
+    <button class="btn" id="startBtn" disabled>Começar a apuração</button>
     <a href="../index.html" style="margin-top:18px;font-size:10px;letter-spacing:.32em;color:rgba(232,227,208,.4);text-decoration:none;text-transform:uppercase;border-bottom:1px solid rgba(232,227,208,.15);padding-bottom:2px">← voltar ao portfólio</a>
     <div class="credit">por Luiz Fernando Toledo · luizftoledo.github.io · caso fictício</div>
   </div>
@@ -882,24 +882,24 @@
   <div class="overlay hidden" id="firedScreen">
     <div class="tag">terça-feira · 14:32</div>
     <div class="end-paper">
-      <div class="end-kicker" style="border-bottom-color:rgba(192,57,43,.55); color:#c0392b">COMUNICADO INTERNO · DESLIGAMENTO</div>
-      <h2 class="end-headline" style="color:#e8e3d0">"Toledo, dá um passo pra trás dessa pauta."</h2>
+      <div class="end-kicker" style="border-bottom-color:rgba(192,57,43,.55); color:#c0392b">APURAÇÃO INTERROMPIDA</div>
+      <h2 class="end-headline" style="color:#e8e3d0">"Davi, sai daí. A gente continua daqui."</h2>
       <p class="art-p" style="margin-top:18px">
-        <span class="art-method">CHEFE DE REDAÇÃO</span>
-        O deputado Carlão do Pastel ligou pra direção do jornal pessoalmente. Falou em ações, falou em sócios da empresa-mãe. Pediu sua cabeça.
+        <span class="art-method">MARTA · EDITORA</span>
+        Marta recebe a ligação quando você já perdeu acesso ao arquivo. Do outro lado da linha, só consegue ouvir a confusão. Pede que você volte.
       </p>
       <p class="art-p">
-        <span class="art-method">RH</span>
-        O Jornalzão do Cidadão lamenta informar que seu vínculo está rescindido a partir desta data. As pistas que você apurou ficaram no notebook que você devolveu na portaria.
+        <span class="art-method">NA REDAÇÃO</span>
+        Na mesa, a reportagem continua incompleta. Há cobranças por atendimento, um portão fechado e perguntas que o gabinete não respondeu. Você vai precisar retomar a investigação.
       </p>
       <p class="end-closing" style="border-top-color:rgba(192,57,43,.45)">
-        Os lobistas chegaram primeiro. A matéria não saiu desta vez.
+        A reportagem não foi concluída nesta tentativa.
       </p>
     </div>
     <div>
       <button class="btn" id="firedRetry" style="border-color:#c0392b; color:#c0392b">Tentar de novo</button>
     </div>
-    <div class="credit">a apuração não termina na primeira derrota</div>
+    <div class="credit">caso fictício · reiniciar a investigação</div>
   </div>
 
   <!-- END -->
@@ -908,16 +908,16 @@
     <div class="end-stats" id="endStats"></div>
     <div class="end-paper">
       <div class="end-kicker">EXCLUSIVO · JORNALZÃO DO CIDADÃO</div>
-      <h2 class="end-headline" id="endHead">Emenda de R$ 4 mi de Carlão do Pastel parou em ONG presidida por ex-motorista do gabinete</h2>
-      <div class="end-byline" id="endByline">Por Luiz Toledo · Jornalzão do Cidadão · com documentos públicos, pedidos de LAI, fontes e auditoria do Tribunal de Contas</div>
+      <h2 class="end-headline" id="endHead">Resultado da investigação</h2>
+      <div class="end-byline" id="endByline">Por Davi · Jornalzão do Cidadão · caso fictício</div>
       <div class="end-article" id="cluesRecap"></div>
-      <p class="end-closing">Procurado pessoalmente e por escrito, o deputado Carlão do Pastel ameaçou processar o jornal e não respondeu às perguntas enviadas até o fechamento desta edição. O Tribunal de Contas, o Instituto Plenitude e a Pastel &amp; Cia também foram procurados. O espaço segue aberto para manifestação.</p>
+      <p class="end-closing">O resultado depende dos documentos encontrados ao longo da investigação.</p>
     </div>
     <div>
       <a class="btn" id="portfolioBtn" href="https://luizftoledo.github.io" target="_blank" rel="noopener">Ver o portfólio →</a>
       <button class="btn" id="replayBtn">Jogar de novo</button>
     </div>
-    <div class="credit">obrigado por apurar com a gente</div>
+    <div class="credit">caso fictício · fim da tentativa</div>
   </div>
 </div>
 
@@ -1282,21 +1282,9 @@ const ROOMS = {
     entities: [
       { type:'spawn', x:3, y:13 },
       { type:'desk', x:5, y:13 }, { type:'desk', x:12, y:13 }, { type:'desk', x:19, y:13 },
-      { type:'npc', x:5, y:13, name:'EDITOR', dialog:[
-        'Toledo. Caiu um áudio anônimo na nossa caixa segura.',
-        'A voz diz que uma emenda do deputado Carlão do Pastel foi parar no "Instituto Plenitude" — um CNPJ criado meses antes de receber o dinheiro.',
-        'Emenda parlamentar é a fatia do Orçamento que o deputado indica pra onde vai. É dinheiro público — e dinheiro público deixa rastro.',
-        'Começa pelo Portal da Transparência (→): lá dá pra ver quanto foi pago e pra quem. Depois confere o CNPJ na Receita e, se faltar documento, entra com pedido de LAI.',
-        'E olho aberto: aliados do deputado e lobistas vão tentar te empurrar pra fora antes da gente ler tudo.',
-      ]},
-      { type:'clue', x:7, y:11, ord:1,
-        method:'CAIXA SEGURA · ÁUDIO ANÔNIMO',
-        text:'Áudio anônimo de 41 segundos. Uma voz: "Olha as emendas pro Instituto Plenitude. Ninguém aqui dentro entende esse CNPJ."',
-        article:'A reportagem teve acesso a um áudio anônimo recebido pelo canal seguro do Jornalzão do Cidadão. Uma voz não identificada cita o Instituto Plenitude e pede que se examine o cadastro da entidade.' },
-      { type:'clue', x:24, y:13, ord:2,
-        method:'PAUTA · CONTEXTO',
-        text:'Mural de pauta: três parentes de aliados do deputado contratados como assessores parlamentares em 2022. Festas em iates de doadores registradas em redes sociais.',
-        article:'Levantamento da reportagem mostra que o gabinete do deputado federal Carlão do Pastel tem três parentes de aliados políticos contratados como assessores e registros públicos de festas em iates de doadores de campanha. Os fatos, isoladamente, não configuram irregularidade, mas compõem o pano de fundo do caso.' },
+      { type:'npc', x:5, y:13, name:'EDITOR', dialog:[]},
+      { type:'clue', x:7, y:11, ord:1, method:'', text:'', article:'' },
+      { type:'clue', x:24, y:13, ord:2, method:'', text:'', article:'' },
       { type:'door', x:29, y:13, dir:'right', to:'arquivo', spawnAt:{ x:1, y:13 } },
     ]
   },
@@ -1331,18 +1319,9 @@ const ROOMS = {
       { type:'door', x:29, y:13, dir:'right', to:'forum',   spawnAt:{ x:1,  y:13 } },
       { type:'shelf', x:2, y:13 }, { type:'shelf', x:25, y:13 },
       { type:'enemy', x:22, y:13, range:3, kind:'lobby', speed:0.55, name:'LOBISTA' },
-      { type:'clue', x:4,  y:13, ord:3,
-        method:'PORTAL DA TRANSPARÊNCIA · CONSULTA',
-        text:'transparencia.gov.br, busca por emendas do autor: empenho 0192/2023, R$ 4 milhões pro Instituto Plenitude. O convênio foi assinado 4 dias depois da indicação do deputado — sem chamamento público, que a lei dispensa para emendas.',
-        article:'Consulta ao Portal da Transparência — site onde qualquer pessoa acompanha os gastos do governo federal, inclusive emendas por autor — localizou o empenho 0192/2023: R$ 4 milhões da emenda do parlamentar destinados ao Instituto Plenitude. O convênio foi assinado quatro dias após a indicação do parlamentar, sem chamamento público — procedimento que a lei dispensa no caso de emendas.' },
-      { type:'clue', x:15, y:7, ord:4,
-        method:'RECEITA FEDERAL · CNPJ E QUADRO DE SÓCIOS',
-        text:'Consulta pública do CNPJ: Instituto Plenitude registrado em outubro de 2022 — cinco meses antes do empenho. Presidente: José Aparecido, motorista do gabinete do deputado entre 2015 e 2019. Nenhuma atuação anterior encontrada nas bases consultadas.',
-        article:'A consulta pública de CNPJ na Receita Federal — aberta a qualquer cidadão — mostra que o Instituto Plenitude foi registrado em outubro de 2022, cinco meses antes de receber a emenda. O presidente da entidade, José Aparecido, foi motorista do gabinete do parlamentar entre 2015 e 2019, segundo registros de pessoal da Câmara dos Deputados. A reportagem não encontrou registros de atuação anterior dele em organizações do terceiro setor nas bases consultadas.' },
-      { type:'clue', x:11, y:9, ord:5,
-        method:'LEI DE ACESSO À INFORMAÇÃO · FALA.BR',
-        text:'Pedido via LAI ao ministério que firmou o convênio: plano de trabalho e prestação de contas. Negado em 1ª instância; liberado após recurso, no 47º dia. Nas notas: 7 pagamentos à Pastel & Cia — empresa em nome do cunhado do deputado, no endereço do escritório político dele.',
-        article:'Pela Lei de Acesso à Informação — que obriga órgãos públicos a entregar documentos a qualquer cidadão que peça —, a reportagem solicitou ao ministério a prestação de contas do convênio. O pedido foi negado em primeira instância e atendido após recurso. As notas fiscais da prestação de contas oficial registram sete pagamentos do Instituto Plenitude à Pastel & Cia, empresa registrada em nome do cunhado do parlamentar e sediada no mesmo endereço do escritório político do deputado.' },
+      { type:'clue', x:4, y:13, ord:3, method:'', text:'', article:'' },
+      { type:'clue', x:15, y:7, ord:4, method:'', text:'', article:'' },
+      { type:'clue', x:11, y:9, ord:5, method:'', text:'', article:'' },
       { type:'ability', x:10, y:5, key:'cam', name:'CÂMERA', text:'Câmera adquirida. [Z] flash — registra prova e cega lobistas.' },
     ]
   },
@@ -1375,24 +1354,12 @@ const ROOMS = {
     entities: [
       { type:'door', x:0,  y:13, dir:'left',  to:'arquivo', spawnAt:{ x:28, y:13 } },
       { type:'door', x:29, y:13, dir:'right', to:'campo',   spawnAt:{ x:1,  y:13 }, locked:'guard' },
-      { type:'guard', x:26, y:13, name:'SEGURANÇA', dialog:[
-        '— "Acesso restrito. Sem fotografar documentos."',
-        '(Use [Z] pra disparar o flash. Quem estiver no caminho fica cego por uns segundos.)',
-      ]},
+      { type:'guard', x:26, y:13, name:'SEGURANÇA', dialog:[]},
       { type:'enemy', x:9,  y:13, range:5, kind:'lobby', speed:0.7, name:'LOBISTA' },
       { type:'enemy', x:18, y:13, range:3, kind:'lobby', speed:0.85, name:'ASSESSOR' },
-      { type:'clue', x:5,  y:13, ord:6,
-        method:'Tribunal de Contas · AUDITORIA PRELIMINAR',
-        text:'Auditoria 14/2024 do Tribunal de Contas lista o repasse à Plenitude entre os "casos de atenção". Análise parada desde 12/03/2024, à espera da resposta da entidade auditada.',
-        article:'A Auditoria 14/2024 do órgão de controle — órgão que fiscaliza o uso do dinheiro federal e publica suas decisões — classificou o repasse à Plenitude como "caso de atenção". A análise está parada desde março de 2024, à espera da resposta da entidade auditada.' },
-      { type:'clue', x:11, y:9, ord:7,
-        method:'Tribunal de Contas · RELATÓRIO PRELIMINAR',
-        text:'Relatório preliminar da área técnica fala em "indícios não conclusivos de desvio de finalidade". O caso ainda não tem julgamento marcado.',
-        article:'O relatório preliminar da área técnica do Tribunal de Contas fala em "indícios não conclusivos de desvio de finalidade". Não há, até agora, julgamento de mérito agendado.' },
-      { type:'clue', x:20, y:13, ord:8,
-        method:'MEMO INTERNO · DOCUMENTO OBTIDO',
-        text:'Memo de servidor do Tribunal de Contas registra três trocas na relatoria do caso. O relator atual aparece em fotos públicas num jantar de campanha do deputado em 2022.',
-        article:'Memorando interno obtido pela reportagem indica três trocas sucessivas na relatoria do caso dentro do Tribunal de Contas. Registros públicos mostram que o relator atual participou de jantar de campanha do parlamentar em 2022.' },
+      { type:'clue', x:5, y:13, ord:6, method:'', text:'', article:'' },
+      { type:'clue', x:11, y:9, ord:7, method:'', text:'', article:'' },
+      { type:'clue', x:20, y:13, ord:8, method:'', text:'', article:'' },
       { type:'ability', x:15, y:7, key:'rec', name:'GRAVADOR', text:'Gravador adquirido. [X] dispara ondas sonoras — expõe lobistas, e a fonte só fala com ele ligado.' },
     ]
   },
@@ -1428,28 +1395,14 @@ const ROOMS = {
       { type:'tree', x:5, y:13 }, { type:'tree', x:9, y:13 }, { type:'tree', x:24, y:13 },
       { type:'car',  x:13, y:13 },
       { type:'npc', x:16, y:13, name:'FONTE', requires:'rec',
-        dialog:[
-          '— "Você tá com gravador? ...então tá. Vou contar."',
-          '— "Trabalhei dois anos no gabinete do Carlão. Vi a operação."',
-          '— "A Plenitude é fachada. O dinheiro volta pra Pastel & Cia — a empresa tá no nome do cunhado dele."',
-          '— "Pega esse pendrive. É a planilha. Não me liga depois."',
-        ],
-        altDialog:[
-          '— "Sem gravador, sem prova. Eu não falo no escuro."',
-          '(Volta com o GRAVADOR. Procura no Tribunal de Contas.)',
-        ],
+        dialog:[],
+        altDialog:[],
         gives:'doc' },
       { type:'enemy', x:4,  y:13, range:2, kind:'lobby', speed:0.6, name:'LOBISTA' },
       { type:'enemy', x:11, y:13, range:2, kind:'lobby', speed:0.9, name:'ASSESSOR' },
       { type:'enemy', x:25, y:13, range:2, kind:'lobby', speed:0.75, name:'LOBISTA' },
-      { type:'clue', x:8,  y:13, ord:9, hidden:true, hiddenBy:'doc',
-        method:'FONTE · CADERNO DE ANOTAÇÕES',
-        text:'Caderno espiral, capa preta, anotações em caneta azul. Lista nomes de "doadores" da campanha 2022. Três deles aparecem como dirigentes da Plenitude no cadastro da Receita depois das eleições.',
-        article:'A reportagem teve acesso a um caderno entregue por uma fonte que pediu anonimato. Nas anotações, três pessoas listadas como "doadores" da campanha de 2022 passam a constar como dirigentes do Instituto Plenitude depois das eleições.' },
-      { type:'clue', x:21, y:13, ord:10, hidden:true, hiddenBy:'doc',
-        method:'PENDRIVE · DOCUMENTO VAZADO',
-        text:'Pendrive criptografado, senha entregue à parte. Dentro: planilha com 23 transferências da Plenitude pra Pastel & Cia (2023-2024). Soma: R$ 3,4 milhões — de cada R$ 100 da emenda, R$ 85 voltaram pra empresa do cunhado.',
-        article:'Planilha contábil obtida em pendrive entregue pela fonte registra 23 transferências do Instituto Plenitude à Pastel & Cia entre 2023 e 2024, somando R$ 3,4 milhões — o equivalente a 85% do valor da emenda.' },
+      { type:'clue', x:8, y:13, ord:9, hidden:true, hiddenBy:'doc', method:'', text:'', article:'' },
+      { type:'clue', x:21, y:13, ord:10, hidden:true, hiddenBy:'doc', method:'', text:'', article:'' },
     ]
   },
 
@@ -1488,15 +1441,8 @@ const ROOMS = {
         name:'CARLÃO DO PASTEL',
         sub:'DEPUTADO · CASO PLENITUDE',
         hp:20,
-        intro:[
-          '— "Repórterzinho. Você não tem ideia de com quem está mexendo."',
-          '— "Meu advogado já tem seu nome. Vou processar você e o Jornalzão do Cidadão por calúnia, difamação e dano moral."',
-          '— "Some daqui antes que eu chame meus aliados."',
-        ],
-        shouts:[
-          'Some daqui, some daqui!',
-          'O cara quer quebrar meu esquema, velho.',
-        ] },
+        intro:[],
+        shouts:[] },
     ]
   },
 
@@ -1712,15 +1658,19 @@ function toast(text) {
   toast._t = setTimeout(()=>el.classList.remove('show'), 2400);
 }
 
+function showSpokenLine(line,fallbackWho,whoId,textId){
+ document.getElementById('roomName').classList.remove('show');
+ document.getElementById('audioHint').classList.remove('show');
+ const item=typeof line==='string'?{who:fallbackWho,text:line}:line;
+ document.getElementById(whoId).textContent=item.who||fallbackWho;
+ document.getElementById(textId).textContent=item.text;
+ if(game.dialog)game.dialog.currentWho=item.who||fallbackWho;
+ window.GameAudio?.speak(item.text);
+}
 function openDialog(who, lines) {
-  game.state = 'dialog';
-  game.dialog = { who, lines, idx:0 };
-  const dl = document.getElementById('dialog');
-  document.getElementById('dlgWho').textContent = who;
-  document.getElementById('dlgText').textContent = lines[0];
-  dl.classList.remove('hidden');
-  SFX.dialog();
-  window.GameAudio?.speak(lines[0]);
+ game.state='dialog';game.dialog={who,lines,idx:0};
+ document.getElementById('dialog').classList.remove('hidden');
+ showSpokenLine(lines[0],who,'dlgWho','dlgText');SFX.dialog();
 }
 function _dlgChar() { SFX.dialog(); }
 function advanceDialog() {
@@ -1740,8 +1690,7 @@ function advanceDialog() {
       game.pendingPickup = null;
     }
   } else {
-    document.getElementById('dlgText').textContent = game.dialog.lines[game.dialog.idx];
-    window.GameAudio?.speak(game.dialog.lines[game.dialog.idx]);
+    showSpokenLine(game.dialog.lines[game.dialog.idx],game.dialog.who,'dlgWho','dlgText');
     SFX.dialog();
   }
 }
@@ -2116,7 +2065,7 @@ function update(dt) {
         if (overlap(prRect, near)) {
           const useAlt = e.requires && !game.abilities[e.requires];
           const lines = useAlt ? (e.altDialog || e.dialog) : e.dialog;
-          openDialog(e.name, lines);
+          openDialog(e.displayName||e.name, lines);
           if (e.gives && !useAlt && !game.abilities[e.gives]) {
             game.pendingPickup = { key:e.gives, name:'DOCUMENTO VAZADO' };
           }
@@ -2232,8 +2181,7 @@ function updateBossIntro() {
       bi.phase = 1; bi.t = 0;
       const intro = document.getElementById('bossIntro');
       intro.classList.add('show');
-      document.getElementById('bossQuoteText').textContent = game.boss.intro[0];
-      window.GameAudio?.speak(game.boss.intro[0]);
+      showSpokenLine(game.boss.intro[0],game.boss.name,'bossQuoteWho','bossQuoteText');
       SFX.dialog();
     }
   } else if (bi.phase === 1) {
@@ -2307,8 +2255,7 @@ function advanceBossIntro() {
     bi.phase = 2;
     bi.t = 0;
   } else {
-    document.getElementById('bossQuoteText').textContent = game.boss.intro[bi.lineIdx];
-    window.GameAudio?.speak(game.boss.intro[bi.lineIdx]);
+    showSpokenLine(game.boss.intro[bi.lineIdx],game.boss.name,'bossQuoteWho','bossQuoteText');
     SFX.dialog();
   }
 }
@@ -2540,11 +2487,7 @@ function updateBossDefeat() {
   }
   if (game.bossDefeat.t === 70) {
     Music.play('title');   // boss caiu — retoma a faixa-título
-    openDialog('EDITOR · AO TELEFONE', [
-      'Toledo. Falou com o gabinete? Beleza.',
-      'Pediu manifestação por escrito, registrou tudo. Outro lado: feito.',
-      'Agora vai. Publica. A porta da editoria tá liberada.',
-    ]);
+    openDialog('MARTA · EDITORA',GameStory.lines('closing'));
     game.bossDefeat = null;
   }
 }
@@ -3463,6 +3406,7 @@ function render() {
 /* ---------- LOOP ---------- */
 let last = performance.now(), simAccumulator=0, manualUntil=0;
 function simulationFrame(dt,draw=true){
+  const advanceRequested=!!(pressed[' ']||pressed.e),wasDialog=game.state==='dialog',wasBossDialog=game.state==='bossIntro'&&game.bossIntro?.phase===1;
   if(window.HD2D) HD2D.tick(dt);
   if (game.state === 'play') update(dt);
   if (game.state === 'bossIntro') updateBossIntro();
@@ -3472,7 +3416,7 @@ function simulationFrame(dt,draw=true){
   // clear single-frame
   for (const k in pressed) pressed[k] = false;
   // dialog input
-  if (game.state === 'dialog' && (keys[' '] || keys['e'])) {
+  if (wasDialog && game.state === 'dialog' && advanceRequested) {
     if (!loop._dlgLock) {
       advanceDialog();
       loop._dlgLock = true;
@@ -3480,7 +3424,7 @@ function simulationFrame(dt,draw=true){
     }
   }
   // boss intro input
-  if (game.state === 'bossIntro' && game.bossIntro?.phase === 1 && (keys[' '] || keys['e'])) {
+  if (wasBossDialog && game.state === 'bossIntro' && game.bossIntro?.phase === 1 && advanceRequested) {
     if (!loop._dlgLock) {
       advanceBossIntro();
       loop._dlgLock = true;
@@ -3607,6 +3551,7 @@ volSlider.addEventListener('input', () => {
 /* ---------- Dica de volume (tela inicial) ---------- */
 let _volHintShown = false;
 function showVolumeHint() {
+  if(game.state!=='title')return;
   if (_volHintShown) return; _volHintShown = true;
   const h = $('audioHint'); if (h) h.classList.add('show');
   if (audioBtn) audioBtn.classList.add('attention-pulse');
@@ -3707,13 +3652,13 @@ window.addEventListener('resize', () => {
 /* ---------- EXPLICAÇÕES DE TELAS NOVAS (novidades por sala) ---------- */
 const ROOM_INTROS = {
   arquivo: { title: 'NOVO · CONSULTAS PÚBLICAS',
-    text: 'As pistas desta sala vêm de fontes que <b>qualquer cidadão consulta de graça</b>: o <b>Portal da Transparência</b> (gastos do governo, emenda por emenda), a consulta de <b>CNPJ na Receita</b> e pedidos de <b>LAI</b>. Cuidado: os <b>LOBISTAS</b> apareceram — encostar neles tira uma <b>vida ♥</b>. E há uma <b>ferramenta nova</b> escondida na sala.' },
+    text: 'Confira o repasse, o cadastro do instituto e as notas fiscais. Há documentos nas plataformas e uma <b>câmera</b> nesta sala. Evite os lobistas: encostar neles tira uma vida.' },
   forum: { title: 'NOVO · Tribunal de Contas',
-    text: 'O <b>Tribunal de Contas</b> (Tribunal de Contas da União) fiscaliza o dinheiro federal — auditorias e acórdãos são públicos e citam emendas suspeitas. Um <b>SEGURANÇA</b> tranca a saída: use o <b>FLASH da câmera [Z]</b> pra cegar quem estiver no caminho. Aqui você também encontra o <b>GRAVADOR</b>.' },
+    text: 'Procure a vistoria e a análise dos atendimentos. <b>Nádia</b> bloqueia a saída: o <b>flash [Z]</b> permite passar por alguns segundos. O <b>gravador</b> também está aqui.' },
   campo: { title: 'NOVO · CAMPO',
-    text: 'A <b>FONTE</b> só fala com o <b>GRAVADOR ligado [X]</b> — e ele também expõe lobistas. Converse com ela pra ganhar o <b>documento</b> que libera o confronto final.' },
+    text: 'Lia trabalhou no instituto e aceitou conversar. Você precisa ter o <b>gravador</b>. O <b>pendrive</b> permite localizar os últimos documentos e seguir para o gabinete.' },
   publicacao: { title: 'RETA FINAL · PUBLICAÇÃO',
-    text: 'Você furou o cerco. Caminhe até a marca <b>PUBLICAR</b>, no centro da sala, pra fechar a matéria e ver a manchete sair.' },
+    text: 'Caminhe até a mesa central para conferir o resultado. A reportagem final depende dos documentos que você encontrou.' },
 };
 const _roomIntroSeen = {};
 let _activeInfo = null;
@@ -3777,9 +3722,10 @@ addEventListener('blur',releaseAllInputs);
 document.addEventListener('visibilitychange',()=>{releaseAllInputs();last=performance.now();simAccumulator=0;if(document.hidden){Music.suspend();window.GameAudio?.stopAll();}else{Music.resume();}});
 requestAnimationFrame(loop);
 </script>
+<script src="story.js?v=2"></script>
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
 <script src="hd2d.js?v=perf-audio-2"></script>
-<script src="audio/manifest.js?v=1"></script>
-<script src="audio.js?v=1"></script>
+<script src="audio/manifest.js?v=story-2"></script>
+<script src="audio.js?v=story-2"></script>
 </body>
 </html>

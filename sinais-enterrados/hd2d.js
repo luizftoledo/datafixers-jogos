@@ -40,12 +40,12 @@ const api={ready,status,actor,prop,tick(dt){now+=dt;for(const e of ROOMS[game.ro
  if(e.type==='npc'||e.type==='guard'){
   if(!available('npcs'))return false;
   const row=e.type==='guard'?2:e.name==='FONTE'?1:0;
-  const talking=game.state==='dialog'&&game.dialog?.who?.includes(e.name);
+  const talking=game.state==='dialog'&&(game.dialog?.currentWho||game.dialog?.who)?.includes(e.name);
   const index=row*4+(talking?[0,1,2,1][Math.floor(now/360)%4]:0);
   const dir=game.player.x<ex?-1:1,stunned=e.type==='guard'&&game.guardStunned>0;
   shadow(ex+16,ey+33,11);actor('npcs',index,ex+16,ey+32,49,dir,stunned?.8:1);
   const near=Math.abs(game.player.x+game.player.w/2-ex-16)<TILE*1.6;
-  if(near||stunned)hint(stunned?'ATORDOADA':'[E] '+e.name,ex+16,ey-23,stunned?'#ffe6a0':'#f3e8cb');return true;
+  if(near||stunned)hint(stunned?'ATORDOADA':'[E] '+(e.displayName||e.name),ex+16,ey-23,stunned?'#ffe6a0':'#f3e8cb');return true;
  }
  if(e.type==='enemy'){
   if(e.defeated)return true;if(!available('enemies'))return false;
