@@ -758,6 +758,22 @@
   @media (orientation:portrait) and (max-width:720px) {
     #tutorialBox { max-width:none; }
   }
+
+/* Boss sequence: arena, health and speech have separate visible areas. */
+.boss-hp-wrap{top:48px;z-index:7;width:min(360px,82%)}
+.boss-hp-bar{width:100%;box-sizing:border-box}.boss-hp-bar i{flex:1;min-width:0;width:auto;height:10px}
+.boss-hp-label{white-space:nowrap;letter-spacing:.15em;color:#ffb4a2;background:rgba(5,8,17,.9);padding:3px 6px;font-size:10px}
+.boss-arena .toast{top:90px;font-size:10px;padding:5px 8px;letter-spacing:.04em;width:80%;text-align:center;box-sizing:border-box}
+.boss-intro{background:transparent;justify-content:flex-start;padding-top:88px;box-sizing:border-box}
+.boss-quote{padding:14px 18px;max-width:min(520px,88%)}
+.boss-quote .who{letter-spacing:.12em;margin-bottom:8px}.boss-quote .more{display:block;letter-spacing:.12em;margin-top:10px}
+.boss-name-card{top:88px;bottom:auto;width:94%}.boss-name-big{font-size:clamp(20px,4vw,42px);white-space:normal}.boss-name-small{font-size:9px;letter-spacing:.15em}
+.boss-shout{top:44%;font-size:clamp(24px,5vw,44px);width:88%}.boss-go{font-size:clamp(40px,8vw,72px)}
+@media(orientation:portrait) and (max-width:720px){
+ .boss-quote{position:fixed;top:calc(66.667vw + 24px);left:5vw;width:90vw;max-width:90vw;box-sizing:border-box;text-align:left;z-index:20}
+ .boss-quote .text{font-size:14px;line-height:1.5}.boss-intro{padding:0}
+}
+
 </style>
 <style>.hd-vignette{background:radial-gradient(ellipse at center,transparent 65%,rgba(4,9,18,.25) 100%);mix-blend-mode:normal}.grain{opacity:.015}</style>
 <style>
@@ -1543,6 +1559,7 @@ function setRoom(name, spawnAt) {
   window.GameAudio?.stopVoice();
   Music.setDucked(false,'dialog');
   game.room = name;
+  document.getElementById('stage').classList.toggle('boss-arena',name==='confronto');
   game.particles.length = 0;
   game.spawnAtNext = spawnAt || null;
 
@@ -1610,17 +1627,6 @@ function setRoom(name, spawnAt) {
   document.getElementById('roomLabel').textContent = room.title;
   updateHearts();
   showRoomName(room.title, room.sub);
-
-  // tension toast on entering boss room
-  if (name === 'confronto') {
-    setTimeout(() => {
-      if(game.room !== 'confronto') return;
-      const t = document.getElementById('toast');
-      t.classList.add('danger');
-      toast('última parada — outro lado · gabinete sabe da pauta');
-      setTimeout(()=>t.classList.remove('danger'), 2600);
-    }, 600);
-  }
 
   // trilha sonora da sala + explicação de novidades (1ª visita)
   updateMusicForRoom();
@@ -2179,6 +2185,7 @@ function updateBossIntro() {
   if (!game.bossIntro || !game.boss) return;
   const bi = game.bossIntro;
   bi.t++;
+  const speaking=!!window.GameAudio?.describe().activeVoice;
   const targetX = game.boss.x * TILE;
 
   if (bi.phase === 0) {
@@ -2194,7 +2201,7 @@ function updateBossIntro() {
       SFX.dialog();
     }
   } else if (bi.phase === 1) {
-    // wait for input — advanced via advanceBossIntro()
+    document.querySelector('#bossIntro .more').textContent=speaking?'FALA EM ANDAMENTO':'[ESPAÇO / TOQUE] CONTINUAR';
   } else if (bi.phase === 2) {
     if (bi.t === 1) {
       const intro = document.getElementById('bossIntro');
@@ -2208,34 +2215,20 @@ function updateBossIntro() {
       buildBossHpBar(game.boss._maxHp, 0);
       SFX.bossIntro();
     }
-    if (bi.t > 32) { bi.phase = 3; bi.t = 0; }
+    if (bi.t > 48) { bi.phase = 3; bi.t = 0; document.getElementById('bossNameCard').classList.add('hidden'); }
   } else if (bi.phase === 3) {
     if (bi.t % 7 === 0 && bi.hpFilled < game.boss._maxHp) {
       bi.hpFilled++;
       buildBossHpBar(game.boss._maxHp, bi.hpFilled);
-      SFX.dialog();
+      tone(400+bi.hpFilled*24,.035,'triangle',.04);
     }
-    // big shouts while HP fills (e.g. "Some daqui, some daqui!")
-    const shouts = game.boss.shouts;
-    if (shouts && shouts.length) {
-      const shout = document.getElementById('bossShout');
-      const halfway = Math.floor((game.boss._maxHp * 7) / 2);
-      if (bi.t === 1) {
-        shout.textContent = shouts[0];
-        window.GameAudio?.speak(shouts[0]);
-        shout.classList.remove('hidden');
-        shout.style.animation = 'none';
-        shout.offsetWidth;
-        shout.style.animation = '';
-      } else if (shouts[1] && bi.t === halfway) {
-        shout.textContent = shouts[1];
-        window.GameAudio?.speak(shouts[1]);
-        shout.style.animation = 'none';
-        shout.offsetWidth;
-        shout.style.animation = '';
-      }
+    // One voiced line; the health reveal waits for it to finish.
+    if(bi.t===1){
+      const shout=document.getElementById('bossShout');
+      shout.textContent='Some daqui!';shout.classList.remove('hidden');
+      window.GameAudio?.speak('Some daqui!');
     }
-    if (bi.hpFilled >= game.boss._maxHp && bi.t > game.boss._maxHp * 7 + 28) {
+    if (bi.hpFilled >= game.boss._maxHp && bi.t > game.boss._maxHp * 7 + 42 && !speaking) {
       bi.phase = 4; bi.t = 0;
       document.getElementById('bossNameCard').classList.add('hidden');
       document.getElementById('bossShout').classList.add('hidden');
@@ -2249,14 +2242,14 @@ function updateBossIntro() {
       bi.phase = 5;
       game.state = 'play';
       game.bossIntro = null;
-      toast('+ pedido formal [c] · + editora-chefe [v] (2x)');
+
       startBossMusic();        // a barra encheu — a trilha do confronto entra agora
-      showBossTips();          // explica as ferramentas novas do confronto
+      toast('[C] fura a blindagem · [V] afasta aliados (2 usos)');
     }
   }
 }
 function advanceBossIntro() {
-  if (!game.bossIntro || game.bossIntro.phase !== 1) return;
+  if (!game.bossIntro || game.bossIntro.phase !== 1 || window.GameAudio?.describe().activeVoice) return;
   const bi = game.bossIntro;
   window.GameAudio?.stopVoice();
   bi.lineIdx++;
@@ -3378,9 +3371,10 @@ const viewCamera={x:0,y:0,room:null,width:360,height:240};
 window.GameCamera=viewCamera;
 function render() {
   ctx.clearRect(0,0,cv.width,cv.height);
-  const cam=viewCamera,p=game.player;
-  const targetX=Math.max(0,Math.min(W-cam.width,p.x+p.w/2-cam.width/2+p.dir*35));
-  const targetY=Math.max(0,Math.min(H-cam.height,p.y+p.h-cam.height*.78));
+  const cam=viewCamera,p=game.player,arena=game.room==='confronto';
+  cam.width=arena?W:360;cam.height=cam.width*cv.height/cv.width;
+  const targetX=arena?0:Math.max(0,Math.min(W-cam.width,p.x+p.w/2-cam.width/2+p.dir*35));
+  const targetY=arena?(H-cam.height)/2:Math.max(0,Math.min(H-cam.height,p.y+p.h-cam.height*.78));
   const snap=cam.room!==game.room||Math.abs(targetX-cam.x)>cam.width*.8;
   cam.x=snap?targetX:cam.x+(targetX-cam.x)*.14;
   cam.y=snap?targetY:cam.y+(targetY-cam.y)*.12;
@@ -3773,10 +3767,10 @@ addEventListener('blur',releaseAllInputs);
 document.addEventListener('visibilitychange',()=>{releaseAllInputs();last=performance.now();simAccumulator=0;if(document.hidden){Music.suspend();window.GameAudio?.stopAll();}else{Music.resume();}});
 requestAnimationFrame(loop);
 </script>
-<script src="story.js?v=2"></script>
+<script src="story.js?v=boss-3"></script>
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
 <script src="hd2d.js?v=perf-audio-2"></script>
-<script src="audio/manifest.js?v=story-2"></script>
+<script src="audio/manifest.js?v=boss-3"></script>
 <script src="audio/combat-manifest.js?v=1"></script>
 <script src="audio.js?v=combat-1"></script>
 <script src="combat-audio.js?v=1"></script>
