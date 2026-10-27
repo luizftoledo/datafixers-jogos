@@ -1102,8 +1102,9 @@ const Music = (function () {
   let TARGET_VOL = 0.55;
   try { const v = parseFloat(localStorage.getItem('se-vol')); if (!isNaN(v)) TARGET_VOL = Math.max(0, Math.min(1, v)); } catch (e) {}
   let current = null;   // { key, audio, _raf }
-  let muted = false, ducked=false;
-  const level=()=>muted?0:TARGET_VOL*(ducked?.3:1);
+  let muted = false;
+  const duckReasons=new Set();
+  const level=()=>muted?0:TARGET_VOL*(duckReasons.size?.06:1);
   const _pre = {};
 
   function _cancelFade(slot) { if (slot && slot._raf) { cancelAnimationFrame(slot._raf); slot._raf = null; } }
@@ -1162,7 +1163,7 @@ const Music = (function () {
     try { localStorage.setItem('se-vol', String(v)); } catch (e) {}
     if (current && !muted) _fade(current, level(), 120);
   }
-  function setDucked(v){ducked=!!v;if(current)_fade(current,level(),120);}
+  function setDucked(v,reason='voice'){if(v)duckReasons.add(reason);else duckReasons.delete(reason);if(current)_fade(current,level(),duckReasons.size?0:400);}
   function getVolume() { return TARGET_VOL; }
   function retry() { if (current && current.audio.paused) { const p = current.audio.play(); if (p && p.catch) p.catch(() => {}); } }
   let suspended=false;
@@ -1540,6 +1541,7 @@ const solid = ch => ch === '#';
 
 function setRoom(name, spawnAt) {
   window.GameAudio?.stopVoice();
+  Music.setDucked(false,'dialog');
   game.room = name;
   game.particles.length = 0;
   game.spawnAtNext = spawnAt || null;
@@ -1669,6 +1671,7 @@ function showSpokenLine(line,fallbackWho,whoId,textId){
  window.GameAudio?.speak(item.text);
 }
 function openDialog(who, lines) {
+ Music.setDucked(true,'dialog');
  game.state='dialog';game.dialog={who,lines,idx:0};
  document.getElementById('dialog').classList.remove('hidden');
  showSpokenLine(lines[0],who,'dlgWho','dlgText');SFX.dialog();
@@ -1697,6 +1700,7 @@ function advanceDialog() {
 }
 function closeDialog() {
   window.GameAudio?.stopVoice();
+  Music.setDucked(false,'dialog');
   document.getElementById('dialog').classList.add('hidden');
   game.dialog = null;
   game.state = 'play';
