@@ -1665,6 +1665,7 @@ function showSpokenLine(line,fallbackWho,whoId,textId){
  document.getElementById(whoId).textContent=item.who||fallbackWho;
  document.getElementById(textId).textContent=item.text;
  if(game.dialog)game.dialog.currentWho=item.who||fallbackWho;
+ window.GameIllustrations?.dialog(item.text);
  window.GameAudio?.speak(item.text);
 }
 function openDialog(who, lines) {
@@ -3771,5 +3772,6 @@ requestAnimationFrame(loop);
 <script src="hd2d.js?v=perf-audio-2"></script>
 <script src="audio/manifest.js?v=story-2"></script>
 <script src="audio.js?v=movement-3"></script>
+<script src="illustrations.js?v=1"></script>
 </body>
 </html>
