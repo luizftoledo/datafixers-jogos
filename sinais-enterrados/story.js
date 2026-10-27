@@ -8,17 +8,39 @@ const boss=ROOMS.confronto.entities.find(e=>e.type==='boss');boss.intro=[1,2,4].
 for(const room of Object.values(ROOMS))for(const e of room.entities)if(e.type==='clue')Object.assign(e,story.clues.find(c=>c.ord===e.ord));
 ROOMS.redacao.sub='jornal local · 16h12';ROOMS.confronto.sub='gabinete do deputado · 18h40';ROOMS.publicacao.sub='fechamento · 20h15';
 ROOMS.campo.sub='rua do centro de reabilitação · encontro com a fonte';
-const response='Carlão atribuiu o atraso ao alvará e disse que as cobranças dizem respeito à gestão do centro. O instituto e a empresa não responderam até o fechamento.';
-function ending(){const found=new Set(game.clues.map(c=>c.ord));const complete=[2,3,5,6,8,10].every(n=>found.has(n));
- document.querySelector('#endScreen .tag').textContent=complete?'reportagem publicada':'apuração encerrada · documentos incompletos';
+function ending(){
+ const found=new Set(game.clues.map(c=>c.ord));
+ const complete=[2,3,5,6,8,10].every(n=>found.has(n));
+ document.querySelector('#endScreen .tag').textContent=complete?'reportagem publicada':'reportagem não concluída';
  document.querySelector('#endScreen .end-kicker').textContent=complete?'JORNALZÃO DO CIDADÃO':'CADERNO DE APURAÇÃO';
- document.getElementById('endHead').textContent=complete?'Centro recebeu R$ 4 milhões, mas vistoria encontrou imóvel fechado e sem equipamentos':'A apuração do centro de reabilitação ainda tem lacunas';
+ document.getElementById('endHead').textContent=complete?'Deputado Carlão inaugurou duas vezes centro de reabilitação que recebeu R$ 4 milhões e segue fechado':'Faltam documentos para concluir a reportagem sobre o centro anunciado por Carlão';
+ document.getElementById('endDeck').textContent=complete?'Empresa de um ex-sócio do deputado apresentou cobranças por sessões de fisioterapia. Fiscalização encontrou a unidade fechada e sem equipamentos.':'Os documentos reunidos até aqui ainda não sustentam a reportagem completa.';
  document.getElementById('endByline').textContent='Por Davi · Jornalzão do Cidadão · caso fictício';
- document.querySelector('#endScreen .end-closing').textContent=complete?response:'Você chegou à redação, mas faltam documentos para sustentar a reportagem completa. O caderno abaixo reúne somente o que foi encontrado. Volte à investigação para conferir as lacunas.';
- document.getElementById('endStats').innerHTML='<b>'+found.size+'/10</b> documentos · '+(complete?'cruzamentos essenciais concluídos':'há peças essenciais não encontradas');
- for(const p of document.querySelectorAll('#cluesRecap .missing'))p.remove();
- if(complete)document.querySelector('#endScreen .end-closing').textContent=response+(found.has(6)?' A vistoria registra que o alvará foi emitido quatro meses antes da inspeção.':'');
+ document.getElementById('endStats').textContent=found.size+'/10 documentos encontrados';
+ const article=document.getElementById('cluesRecap');article.replaceChildren();
+ function paragraph(text,evidence){const p=document.createElement('p');p.className='art-p';p.textContent=text;if(evidence)p.dataset.evidence=evidence;article.append(p);}
+ if(complete){
+  paragraph('O deputado Carlão do Pastel participou de duas inaugurações de um centro de reabilitação que recebeu R$ 4 milhões em recursos públicos, mas ainda não atendeu pacientes encaminhados pela rede de saúde. Uma vistoria encontrou o imóvel fechado e sem os equipamentos previstos, embora a prestação de contas apresente cobranças por sessões de fisioterapia.');
+  paragraph('Os dois anúncios de inauguração ocorreram com onze meses de intervalo. Nas fotos, Carlão aparece diante da mesma placa, que promete 120 atendimentos por dia. A secretaria de Saúde informou que a unidade não recebeu pacientes encaminhados pela rede.',2);
+  if(found.has(1))paragraph('Uma moradora contou à reportagem que foi duas vezes ao endereço com a mãe, em busca de atendimento. Nas duas visitas, encontrou o portão fechado. A identidade da paciente e seus dados de saúde foram preservados.');
+  paragraph('O dinheiro chegou ao Instituto Plenitude por meio de uma emenda indicada por Carlão. A entidade deveria usar a verba para equipar e manter o centro, com início dos atendimentos previsto para setembro de 2023.');
+  paragraph('Em março de 2024, porém, uma equipe de fiscalização encontrou o imóvel fechado, sem pacientes e sem os equipamentos previstos no plano de trabalho. O relatório da visita inclui fotos das salas vazias.',6);
+  paragraph('Questionado sobre o centro fechado, Carlão atribuiu o atraso à falta de alvará. O documento da fiscalização, no entanto, registra que a autorização já havia sido emitida em novembro de 2023, quatro meses antes da vistoria.');
+  paragraph('As contas entregues ao ministério incluem sete notas da Vértice Serviços que cobram sessões de fisioterapia. Duas foram emitidas antes da data prevista no cronograma para a instalação dos equipamentos. Essas cobranças não comprovam que os atendimentos aconteceram.');
+  paragraph('A Vértice foi contratada pela Plenitude para gerir o centro. O proprietário da empresa foi sócio de Carlão até 2021, segundo o registro público. O contrato separa os gastos de instalação das despesas com atendimento.');
+  if(found.has(4))paragraph('O Instituto Plenitude foi criado cinco meses antes de receber a verba. Seu presidente é um ex-funcionário do gabinete do deputado.');
+  paragraph('Arquivos contábeis obtidos pela reportagem registram 23 transferências da Plenitude à Vértice, no total de R$ 3,4 milhões — 85% do dinheiro recebido pelo instituto. Sete comprovantes correspondem às notas entregues ao ministério. As demais transferências registradas na planilha ainda não tiveram confirmação independente.');
+  if(found.has(9))paragraph('Uma lista de atendimentos entregue à reportagem repete os mesmos nomes, na mesma ordem, em dias seguidos. Os totais de sete datas coincidem com as cobranças nas notas fiscais. Os nomes foram omitidos para preservar os dados de saúde das pessoas citadas.');
+  paragraph('Sobre as cobranças, Carlão disse que a reportagem estava misturando obra e gestão e pediu que as perguntas fossem enviadas por escrito.');
+  if(found.has(7))paragraph('A fiscalização pediu à Plenitude os registros dos atendimentos e os comprovantes de entrega dos equipamentos. Segundo a análise técnica, o instituto apresentou novas notas, mas não entregou esses documentos. O caso ainda não foi julgado.');
+  document.querySelector('#endScreen .end-closing').textContent='O Instituto Plenitude e a Vértice Serviços não responderam até o fechamento desta reportagem.';
+ }else{
+  for(const clue of story.clues)if(found.has(clue.ord))paragraph(clue.article,clue.ord);
+  document.querySelector('#endScreen .end-closing').textContent='Volte à investigação para encontrar os documentos que faltam. Esta tentativa não resultou em uma matéria publicada.';
+ }
+ document.querySelector('#endScreen .end-paper').scrollTop=0;
 }
+
 const oldEnd=endGame;endGame=function(){oldEnd();ending();};
 window.GameStory={lines,ending,allSpoken:[...['opening','guard','source','source_alt','confrontation','shouts','closing'].flatMap(k=>story[k].filter(l=>l.speaker).map(l=>l.text))],version:'story-2'};document.getElementById('startBtn').disabled=false;
 })();

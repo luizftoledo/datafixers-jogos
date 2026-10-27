@@ -774,6 +774,22 @@
  .boss-quote .text{font-size:14px;line-height:1.5}.boss-intro{padding:0}
 }
 
+
+/* Finished report: continuous newspaper text with a readable typeface. */
+#endScreen{padding:16px 20px;gap:0}
+#endScreen>.tag{margin:0 0 8px;font-size:10px;letter-spacing:.12em}
+#endScreen .end-stats{margin:0 0 6px;letter-spacing:.08em}
+#endScreen .end-paper{background:#f3eedf;color:#242018;max-width:760px;flex:1;min-height:0;max-height:none;margin:8px 0 12px;padding:24px;box-sizing:border-box}
+#endScreen .end-kicker{color:#69512b;letter-spacing:.12em;border-color:#8a7353}
+#endScreen .end-headline{font:700 32px/1.18 Georgia,'Times New Roman',serif;color:#201d18;letter-spacing:0}
+#endScreen .end-deck{font:17px/1.5 Georgia,'Times New Roman',serif;color:#4a4135;max-width:none;margin:12px 0}
+#endScreen .end-byline{font:12px/1.5 Arial,sans-serif;color:#625747;letter-spacing:0;text-transform:none;border-color:#c7bba7;margin-bottom:20px}
+#endScreen .art-p{font:17px/1.7 Georgia,'Times New Roman',serif;color:#242018;max-width:none;margin:0 0 18px}
+#endScreen .end-closing{font:15px/1.6 Georgia,'Times New Roman',serif;color:#4a4135;max-width:none;border-color:#c7bba7;margin:18px 0 0}
+#endScreen .evidence-image figcaption{color:#625747}
+#endScreen>.credit{margin-top:8px;font-size:9px;letter-spacing:.08em}
+@media(max-width:720px){#endScreen{padding:12px}#endScreen .end-paper{padding:18px}#endScreen .end-headline{font-size:26px}#endScreen .art-p{font-size:16px}#endScreen .end-deck{font-size:16px}#endScreen .btn{padding:10px 12px;font-size:10px;letter-spacing:.05em}}
+
 </style>
 <style>.hd-vignette{background:radial-gradient(ellipse at center,transparent 65%,rgba(4,9,18,.25) 100%);mix-blend-mode:normal}.grain{opacity:.015}</style>
 <style>
@@ -925,6 +941,7 @@
     <div class="end-paper">
       <div class="end-kicker">EXCLUSIVO · JORNALZÃO DO CIDADÃO</div>
       <h2 class="end-headline" id="endHead">Resultado da investigação</h2>
+      <p class="end-deck" id="endDeck"></p>
       <div class="end-byline" id="endByline">Por Davi · Jornalzão do Cidadão · caso fictício</div>
       <div class="end-article" id="cluesRecap"></div>
       <p class="end-closing">O resultado depende dos documentos encontrados ao longo da investigação.</p>
@@ -3767,13 +3784,13 @@ addEventListener('blur',releaseAllInputs);
 document.addEventListener('visibilitychange',()=>{releaseAllInputs();last=performance.now();simAccumulator=0;if(document.hidden){Music.suspend();window.GameAudio?.stopAll();}else{Music.resume();}});
 requestAnimationFrame(loop);
 </script>
-<script src="story.js?v=boss-3"></script>
+<script src="story.js?v=article-4"></script>
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
 <script src="hd2d.js?v=perf-audio-2"></script>
 <script src="audio/manifest.js?v=boss-3"></script>
 <script src="audio/combat-manifest.js?v=1"></script>
 <script src="audio.js?v=combat-1"></script>
 <script src="combat-audio.js?v=1"></script>
-<script src="illustrations.js?v=1"></script>
+<script src="illustrations.js?v=article-2"></script>
 </body>
 </html>
