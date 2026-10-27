@@ -73,17 +73,27 @@ const api={ready,status,actor,prop,tick(dt){now+=dt;for(const e of ROOMS[game.ro
  if(game.recPulse>.1)prop(7,x,y,40+(1-game.recPulse)*115,0,game.recPulse*.7);
 },describe(){return {version:'hd2d-1',loaded:[...status.loaded],failed:[...status.failed],playerFrame:game.player._artFrame??null,walkingFrames:6,renderScale:'fixed per identity',anchors:'measured feet baseline and head axis',physics:'original collision boxes'};}};
 window.HD2D=api;
+let staticRoom=null,staticLayer=null;
 for(const [i,key] of rooms.entries()){
  const fallback=ROOMS[key].bg;
- ROOMS[key].bg=()=>{if(!available('rooms'))return fallback();const f=frame('rooms',i);ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(images.rooms,f.x,f.y,f.w,f.h,0,0,W,H);ctx.fillStyle='rgba(5,11,20,.07)';ctx.fillRect(0,0,W,H);ctx.restore();};
+ ROOMS[key].bg=()=>{
+  if(!available('rooms'))return fallback();
+  if(staticRoom!==key){
+   const layer=document.createElement('canvas');layer.width=W;layer.height=H;const c=layer.getContext('2d');const f=frame('rooms',i);
+   c.imageSmoothingEnabled=true;c.drawImage(images.rooms,f.x,f.y,f.w,f.h,0,0,W,H);c.fillStyle='rgba(5,11,20,.07)';c.fillRect(0,0,W,H);
+   const map=ROOMS[key].map;
+   for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(map[y][x]==='#'){
+    const px=x*TILE,py=y*TILE,top=y===0||map[y-1][x]!=='#';const g=c.createLinearGradient(0,py,0,py+32);
+    g.addColorStop(0,top?'#73665b':'#2b343c');g.addColorStop(.18,top?'#4c5052':'#252d35');g.addColorStop(1,'#171f29');c.fillStyle=g;c.fillRect(px,py,32,32);
+    if(top){c.fillStyle='rgba(247,215,160,.65)';c.fillRect(px,py,32,2);c.fillStyle='rgba(12,17,22,.65)';c.fillRect(px,py+5,32,2);}c.fillStyle='rgba(11,17,23,.3)';c.fillRect(px+31,py,1,32);
+   }
+   staticLayer=layer;staticRoom=key;
+  }
+  ctx.drawImage(staticLayer,0,0);
+ };
 }
 const originalTiles=drawTiles;
-drawTiles=function(){if(!available('rooms'))return originalTiles();const room=ROOMS[game.room];ctx.save();for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(room.map[y][x]==='#'){
- const px=x*TILE,py=y*TILE,top=y===0||room.map[y-1][x]!=='#';
- const g=ctx.createLinearGradient(0,py,0,py+32);g.addColorStop(0,top?'#73665b':'#2b343c');g.addColorStop(.18,top?'#4c5052':'#252d35');g.addColorStop(1,'#171f29');ctx.fillStyle=g;ctx.fillRect(px,py,32,32);
- if(top){ctx.fillStyle='rgba(247,215,160,.65)';ctx.fillRect(px,py,32,2);ctx.fillStyle='rgba(12,17,22,.65)';ctx.fillRect(px,py+5,32,2);}
- ctx.fillStyle='rgba(11,17,23,.3)';ctx.fillRect(px+31,py,1,32);
- }ctx.restore();};
+drawTiles=function(){if(!available('rooms')||staticRoom!==game.room)return originalTiles();};
 // Descriptive room signage; architecture carries no real government names or symbols.
 ROOMS.forum.title='ÓRGÃO DE CONTROLE';ROOMS.forum.sub='auditoria de recursos públicos';
 })();

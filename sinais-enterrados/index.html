@@ -982,7 +982,7 @@ function unlockAudio() {
   }
 }
 function tone(freq, duration, type='square', vol=0.06, slideTo=null) {
-  if (!soundOn) return;
+  if (!soundOn || document.hidden) return;
   const ctx = ensureAudio(); if (!ctx) return;
   if (ctx.state !== 'running') ctx.resume();
   const t = ctx.currentTime;
@@ -998,7 +998,7 @@ function tone(freq, duration, type='square', vol=0.06, slideTo=null) {
   osc.stop(t + duration + 0.02);
 }
 function noise(duration=0.1, vol=0.05) {
-  if (!soundOn) return;
+  if (!soundOn || document.hidden) return;
   const ctx = ensureAudio(); if (!ctx) return;
   const sr = ctx.sampleRate;
   const buf = ctx.createBuffer(1, sr * duration, sr);
@@ -1081,6 +1081,7 @@ function setMute(m) {
   soundOn = !m;
   try { localStorage.setItem('se-mute', m ? '1' : '0'); } catch(e){}
   Music.setMuted(m);
+  if(window.GameAudio)GameAudio.sync();
   if (!m) Music.retry();
   if (typeof syncAudioUI === 'function') syncAudioUI();
 }
@@ -1096,7 +1097,8 @@ const Music = (function () {
   let TARGET_VOL = 0.55;
   try { const v = parseFloat(localStorage.getItem('se-vol')); if (!isNaN(v)) TARGET_VOL = Math.max(0, Math.min(1, v)); } catch (e) {}
   let current = null;   // { key, audio, _raf }
-  let muted = false;
+  let muted = false, ducked=false;
+  const level=()=>muted?0:TARGET_VOL*(ducked?.3:1);
   const _pre = {};
 
   function _cancelFade(slot) { if (slot && slot._raf) { cancelAnimationFrame(slot._raf); slot._raf = null; } }
@@ -1114,7 +1116,7 @@ const Music = (function () {
   }
   function preload(key) {
     if (_pre[key] || !TRACKS[key]) return;
-    const a = new Audio(); a.preload = 'auto'; a.src = TRACKS[key]; a.loop = true;
+    const a = new Audio(); a.preload = 'metadata'; a.src = TRACKS[key]; a.loop = true;
     try { a.load(); } catch (e) {}
     _pre[key] = a;
   }
@@ -1127,7 +1129,7 @@ const Music = (function () {
       if (current.audio.paused) { const p = current.audio.play(); if (p && p.catch) p.catch(() => {}); }
       return;
     }
-    const audio = new Audio();
+    const audio = _pre[key] || new Audio(); delete _pre[key];
     audio.src = TRACKS[key]; audio.loop = true; audio.preload = 'auto'; audio.volume = 0;
     try { audio.load(); } catch (e) {}
     const slot = { key, audio, _raf: null };
@@ -1137,7 +1139,7 @@ const Music = (function () {
     };
     tryPlay();
     audio.addEventListener('canplay', () => { if (audio.paused && current === slot) tryPlay(); }, { once: true });
-    _fade(slot, muted ? 0 : TARGET_VOL, FADE_MS);
+    _fade(slot, level(), FADE_MS);
     if (current) {
       const prev = current;
       _fade(prev, 0, FADE_MS, () => { try { prev.audio.pause(); prev.audio.src = ''; } catch (e) {} });
@@ -1149,16 +1151,20 @@ const Music = (function () {
     const prev = current; current = null;
     _fade(prev, 0, FADE_MS, () => { try { prev.audio.pause(); prev.audio.src = ''; } catch (e) {} });
   }
-  function setMuted(m) { muted = m; if (current) _fade(current, m ? 0 : TARGET_VOL, 200); }
+  function setMuted(m) { muted = m; if (current) _fade(current, level(), 200); }
   function setVolume(v) {
     v = Math.max(0, Math.min(1, v)); TARGET_VOL = v;
     try { localStorage.setItem('se-vol', String(v)); } catch (e) {}
-    if (current && !muted) _fade(current, v, 120);
+    if (current && !muted) _fade(current, level(), 120);
   }
+  function setDucked(v){ducked=!!v;if(current)_fade(current,level(),120);}
   function getVolume() { return TARGET_VOL; }
   function retry() { if (current && current.audio.paused) { const p = current.audio.play(); if (p && p.catch) p.catch(() => {}); } }
+  let suspended=false;
+  function suspend(){suspended=true;if(current){_cancelFade(current);current.audio.pause();}}
+  function resume(){if(!suspended)return;suspended=false;if(current){current.audio.volume=level();retry();}}
   function currentKey() { return current ? current.key : null; }
-  return { play, stop, setMuted, setVolume, getVolume, retry, preload, preloadAll, currentKey };
+  return { play, stop, setMuted, setVolume, getVolume, retry, preload, preloadAll, currentKey, suspend, resume, setDucked };
 })();
 
 /* Wrappers mantidos pelos call-sites do boss */
@@ -1582,6 +1588,7 @@ const mapAt = (room, cx, cy) => {
 const solid = ch => ch === '#';
 
 function setRoom(name, spawnAt) {
+  window.GameAudio?.stopVoice();
   game.room = name;
   game.particles.length = 0;
   game.spawnAtNext = spawnAt || null;
@@ -1708,6 +1715,7 @@ function openDialog(who, lines) {
   document.getElementById('dlgText').textContent = lines[0];
   dl.classList.remove('hidden');
   SFX.dialog();
+  window.GameAudio?.speak(lines[0]);
 }
 function _dlgChar() { SFX.dialog(); }
 function advanceDialog() {
@@ -1728,10 +1736,12 @@ function advanceDialog() {
     }
   } else {
     document.getElementById('dlgText').textContent = game.dialog.lines[game.dialog.idx];
+    window.GameAudio?.speak(game.dialog.lines[game.dialog.idx]);
     SFX.dialog();
   }
 }
 function closeDialog() {
+  window.GameAudio?.stopVoice();
   document.getElementById('dialog').classList.add('hidden');
   game.dialog = null;
   game.state = 'play';
@@ -2218,6 +2228,7 @@ function updateBossIntro() {
       const intro = document.getElementById('bossIntro');
       intro.classList.add('show');
       document.getElementById('bossQuoteText').textContent = game.boss.intro[0];
+      window.GameAudio?.speak(game.boss.intro[0]);
       SFX.dialog();
     }
   } else if (bi.phase === 1) {
@@ -2249,12 +2260,14 @@ function updateBossIntro() {
       const halfway = Math.floor((game.boss._maxHp * 7) / 2);
       if (bi.t === 1) {
         shout.textContent = shouts[0];
+        window.GameAudio?.speak(shouts[0]);
         shout.classList.remove('hidden');
         shout.style.animation = 'none';
         shout.offsetWidth;
         shout.style.animation = '';
       } else if (shouts[1] && bi.t === halfway) {
         shout.textContent = shouts[1];
+        window.GameAudio?.speak(shouts[1]);
         shout.style.animation = 'none';
         shout.offsetWidth;
         shout.style.animation = '';
@@ -2283,12 +2296,14 @@ function updateBossIntro() {
 function advanceBossIntro() {
   if (!game.bossIntro || game.bossIntro.phase !== 1) return;
   const bi = game.bossIntro;
+  window.GameAudio?.stopVoice();
   bi.lineIdx++;
   if (bi.lineIdx >= game.boss.intro.length) {
     bi.phase = 2;
     bi.t = 0;
   } else {
     document.getElementById('bossQuoteText').textContent = game.boss.intro[bi.lineIdx];
+    window.GameAudio?.speak(game.boss.intro[bi.lineIdx]);
     SFX.dialog();
   }
 }
@@ -3442,13 +3457,13 @@ function render() {
 
 /* ---------- LOOP ---------- */
 let last = performance.now(), simAccumulator=0, manualUntil=0;
-function simulationFrame(dt){
+function simulationFrame(dt,draw=true){
   if(window.HD2D) HD2D.tick(dt);
   if (game.state === 'play') update(dt);
   if (game.state === 'bossIntro') updateBossIntro();
   if (game.state === 'bossDefeat') updateBossDefeat();
   updateParticles();
-  render();
+  if(draw)render();
   // clear single-frame
   for (const k in pressed) pressed[k] = false;
   // dialog input
@@ -3469,8 +3484,9 @@ function simulationFrame(dt){
   }
 }
 function loop(t){
+ if(document.hidden){last=t;simAccumulator=0;requestAnimationFrame(loop);return;}
  const elapsed=Math.max(0,Math.min(100,t-last));last=t;
- if(t>=manualUntil){simAccumulator+=elapsed;let steps=0;while(simAccumulator>=1000/60&&steps++<6){simulationFrame(1000/60);simAccumulator-=1000/60;}}
+ if(t>=manualUntil){simAccumulator+=elapsed;let steps=0;while(simAccumulator>=1000/60&&steps++<6){simulationFrame(1000/60,false);simAccumulator-=1000/60;}render();}
  requestAnimationFrame(loop);
 }
 window.advanceTime=(ms)=>{manualUntil=performance.now()+100;const steps=Math.max(1,Math.round(ms/(1000/60)));for(let i=0;i<steps;i++)simulationFrame(1000/60);last=performance.now();simAccumulator=0;};
@@ -3478,6 +3494,7 @@ window.render_game_to_text=()=>JSON.stringify({coordinates:'origin top-left; x r
 
 /* ---------- FIRED ---------- */
 function firedGame() {
+  window.GameAudio?.stopVoice();
   game.state = 'fired';
   stopBossMusic();
   document.getElementById('firedScreen').classList.remove('hidden');
@@ -3485,6 +3502,7 @@ function firedGame() {
 
 /* ---------- END ---------- */
 function endGame() {
+  window.GameAudio?.stopVoice();
   game.state = 'end';
   SFX.win();
   // Collect all clues across rooms (collected + missing) and sort by ord
@@ -3529,7 +3547,7 @@ document.getElementById('startBtn').addEventListener('click', () => {
   setMute(!soundOn);           // refresh estado dos botões de som
   dismissVolumeHint();
   document.getElementById('audioPanel').classList.remove('show');
-  Music.preloadAll();
+  // Load tracks only when selected, preserving the original music files.
   startTutorial();             // tour de boas-vindas (estilo "10 dias")
 });
 document.getElementById('replayBtn').addEventListener('click', () => location.reload());
@@ -3742,15 +3760,21 @@ document.querySelectorAll('#difficulty .diff-btn').forEach(b => {
 
 /* ---------- INIT ÁUDIO ---------- */
 setMute(!soundOn);        // sincroniza botões e estado de mute na carga
-Music.preload('title');
-Music.play('title');      // tenta tocar a faixa-título (autoplay pode estar travado até o 1º gesto)
+// Start music on interaction, avoiding a full music download before play.
+addEventListener('pointerup',e=>{if(game.state==='title'&&e.target.id!=='startBtn')Music.play('title');},{once:true});
+//      // tenta tocar a faixa-título (autoplay pode estar travado até o 1º gesto)
 setTimeout(showVolumeHint, 400);   // mostra onde ajustar o volume assim que a tela inicial aparece
 
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;for(const k in pressed)pressed[k]=false;});
 addEventListener('keydown',e=>{if(e.key.toLowerCase()==='f'&&!e.repeat){if(document.fullscreenElement)document.exitFullscreen?.();else document.getElementById('stage').requestFullscreen?.();}});
+function releaseAllInputs(){for(const k in keys)keys[k]=false;for(const k in pressed)pressed[k]=false;document.querySelectorAll('.tc-btn.active').forEach(e=>e.classList.remove('active'));}
+addEventListener('blur',releaseAllInputs);
+document.addEventListener('visibilitychange',()=>{releaseAllInputs();last=performance.now();simAccumulator=0;if(document.hidden){Music.suspend();window.GameAudio?.stopAll();}else{Music.resume();}});
 requestAnimationFrame(loop);
 </script>
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
-<script src="hd2d.js?v=1"></script>
+<script src="hd2d.js?v=perf-audio-2"></script>
+<script src="audio/manifest.js?v=1"></script>
+<script src="audio.js?v=1"></script>
 </body>
 </html>
