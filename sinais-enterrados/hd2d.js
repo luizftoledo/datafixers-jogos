@@ -19,7 +19,7 @@ function shadow(x,y,w){ctx.save();ctx.fillStyle='rgba(5,10,18,.38)';ctx.beginPat
 function prop(index,x,y,size,rotation=0,alpha=1){if(!available('props'))return false;const f=frame('props',index),b=f.bounds,w=b[2]-b[0],h=b[3]-b[1],s=size/Math.max(w,h);ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.globalAlpha*=alpha;ctx.imageSmoothingEnabled=true;ctx.drawImage(images.props,f.x+b[0],f.y+b[1],w,h,-w*s/2,-h*s/2,w*s,h*s);ctx.restore();return true;}
 function glow(x,y,r,color){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);}
 function hint(label,x,y,color='#f3e8cb'){ctx.save();ctx.font='bold 9px JetBrains Mono';const width=ctx.measureText(label).width+10;ctx.fillStyle='rgba(9,17,24,.83)';ctx.fillRect(x-width/2,y-9,width,14);ctx.fillStyle=color;ctx.textAlign='center';ctx.fillText(label,x,y+1);ctx.restore();}
-const api={ready,status,actor,prop,tick(dt){now+=dt;},player(p){
+const api={ready,status,actor,prop,tick(dt){now+=dt;for(const e of ROOMS[game.room].entities){if(!['enemy','boss'].includes(e.type))continue;const x=e._x??e.x*TILE;e._artDistance=(e._artDistance||0)+Math.abs(x-(e._artPreviousX??x));e._artPreviousX=x;}},player(p){
  if(!available('hero'))return false;
  const walk=Math.abs(p.vx)>.4&&p.onGround;
  const index=game.flashLight>.6?10:game.recPulse>.85?11:!p.onGround?7:walk?Math.floor((p.walkDistance||0)/9)%6:6;

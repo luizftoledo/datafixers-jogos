@@ -1827,7 +1827,6 @@ function update(dt) {
   if (p.y > H + 200) respawnPlayer();
 
   p.walkDistance=(p.walkDistance||0)+(p.onGround?Math.abs(p.vx):0);
-  for(const e of ROOMS[game.room].entities){const x=e._x??e.x*TILE;e._artDistance=(e._artDistance||0)+Math.abs(x-(e._artPreviousX??x));e._artPreviousX=x;}
 
   // Animation timer
   if (Math.abs(p.vx) > 0.4 && p.onGround) p.anim += dt*0.012*Math.abs(p.vx);
