@@ -1732,6 +1732,8 @@ function closeDialog() {
 /* ---------- COLLISION ---------- */
 function rectVsTiles(p, dx, dy) {
   // Move axis-by-axis
+  // Raised shelves/platforms are one-way surfaces; the floor remains solid.
+  const blocks=(cx,cy)=>solid(mapAt(game.room,cx,cy))&&cy>=14;
   // X
   p.x += dx;
   let bbox = playerBBox(p);
@@ -1739,14 +1741,15 @@ function rectVsTiles(p, dx, dy) {
   if (dx > 0) {
     for (let cy = Math.floor(t/TILE); cy <= Math.floor((b-1)/TILE); cy++) {
       const cx = Math.floor((r-1)/TILE);
-      if (solid(mapAt(game.room, cx, cy))) { p.x = cx*TILE - p.w; p.vx = 0; break; }
+      if (blocks(cx,cy)) { p.x = cx*TILE - p.w; p.vx = 0; break; }
     }
   } else if (dx < 0) {
     for (let cy = Math.floor(t/TILE); cy <= Math.floor((b-1)/TILE); cy++) {
       const cx = Math.floor(l/TILE);
-      if (solid(mapAt(game.room, cx, cy))) { p.x = (cx+1)*TILE; p.vx = 0; break; }
+      if (blocks(cx,cy)) { p.x = (cx+1)*TILE; p.vx = 0; break; }
     }
   }
+  p.x=Math.max(18,Math.min(W-p.w-18,p.x));
   // Y
   p.y += dy;
   bbox = playerBBox(p);
@@ -1755,17 +1758,24 @@ function rectVsTiles(p, dx, dy) {
   if (dy > 0) {
     for (let cx = Math.floor(l/TILE); cx <= Math.floor((r-1)/TILE); cx++) {
       const cy = Math.floor((b-0.001)/TILE);
-      if (solid(mapAt(game.room, cx, cy))) { p.y = cy*TILE - p.h; p.vy = 0; p.onGround = true; break; }
+      if (solid(mapAt(game.room, cx, cy)) && (cy>=14 || b-dy<=cy*TILE+1)) { p.y = cy*TILE - p.h; p.vy = 0; p.onGround = true; break; }
     }
   } else if (dy < 0) {
     for (let cx = Math.floor(l/TILE); cx <= Math.floor((r-1)/TILE); cx++) {
       const cy = Math.floor(t/TILE);
-      if (solid(mapAt(game.room, cx, cy))) { p.y = (cy+1)*TILE; p.vy = 0; break; }
+      if (blocks(cx,cy)) { p.y = (cy+1)*TILE; p.vy = 0; break; }
     }
   }
 }
 function playerBBox(p) { return { l:p.x, r:p.x+p.w, t:p.y, b:p.y+p.h }; }
 
+// Foot capsule handles platforms; body bounds match the visible actors for combat.
+function combatRect(e,isPlayer=false){
+ const feet=isPlayer?e.y+e.h:(e._y??e.y*TILE)+TILE;
+ const cx=isPlayer?e.x+e.w/2:(e._x??e.x*TILE)+16;
+ const height=e.type==='boss'?156:136,width=e.type==='boss'?72:isPlayer?36:44;
+ return {x:cx-width/2,y:feet-height,w:width,h:height};
+}
 function entityRect(e) {
   if (e.type === 'noisewall') return { x:e.x*TILE, y:e.y*TILE, w:TILE, h:(e.h||1)*TILE };
   if (e.type === 'door')      return { x:e.x*TILE, y:e.y*TILE - TILE, w:TILE, h:TILE*2 };
@@ -1850,7 +1860,7 @@ function update(dt) {
     game.recCooldown = 22;
     // shoot sound-wave projectile in facing direction
     game.projectiles.push({
-      x: p.x + p.w/2, y: p.y + p.h/2 - 2,
+      x: p.x + p.w/2+p.dir*18, y: p.y+p.h-94,
       vx: (p.dir > 0 ? 7.5 : -7.5),
       life: 50, dir: p.dir, age: 0,
       weapon: 'rec', dmg: 1,
@@ -1865,7 +1875,7 @@ function update(dt) {
   if (pressed['c'] && game.abilities.ped && game.pedCooldown <= 0) {
     game.pedCooldown = 50;
     game.projectiles.push({
-      x: p.x + p.w/2, y: p.y + p.h/2,
+      x: p.x + p.w/2+p.dir*18, y: p.y+p.h-90,
       vx: (p.dir > 0 ? 5.6 : -5.6),
       vy: -3.6,
       gravity: 0.18,
@@ -1884,7 +1894,7 @@ function update(dt) {
     for (const e of ROOMS[game.room].entities) {
       if (e.type === 'enemy' && e.kind === 'assessor' && !e.defeated) {
         e.defeated = true;
-        flashSparks(e._x + TILE/2, e.y*TILE + TILE/2, '#ffffff');
+        flashSparks(e._x + TILE/2, e.y*TILE + TILE-90, '#ffffff');
         cleared++;
       }
     }
@@ -1925,8 +1935,8 @@ function update(dt) {
     // Boss (priority hit)
     if (game.boss && !game.boss.defeated) {
       const b = game.boss;
-      const bw = 36, bh = 48;
-      const br = { x: b._x - 2, y: b.y*TILE + TILE - bh, w: bw, h: bh };
+      const bw = 72;
+      const br = combatRect(b);
       const liveAssessors = ROOMS[game.room].entities.filter(e =>
         e.type === 'enemy' && e.kind === 'assessor' && !e.defeated
       ).length;
@@ -1957,16 +1967,16 @@ function update(dt) {
     // Regular enemies (and dynamically-spawned assessores)
     for (const e of ROOMS[game.room].entities) {
       if (e.type !== 'enemy' || e.defeated) continue;
-      const er = { x: e._x + 4, y: e.y*TILE + 2, w: 24, h: 30 };
+      const er = combatRect(e);
       if (overlap(prj, er)) {
         e._hp = (e._hp ?? 1) - (proj.dmg || 1);
         if (e._hp <= 0) {
           e.defeated = true;
-          flashSparks(e._x + TILE/2, e.y*TILE + TILE/2, '#d4a017');
+          flashSparks(e._x + TILE/2, e.y*TILE + TILE-90, '#d4a017');
           toast(e.kind === 'assessor' ? 'aliado neutralizado' : 'lobista exposto');
           if(window.CombatAudio) CombatAudio.enemyHurt(e); else SFX.enemyDown();
         } else {
-          flashSparks(e._x + TILE/2, e.y*TILE + TILE/2, '#c0392b');
+          flashSparks(e._x + TILE/2, e.y*TILE + TILE-90, '#c0392b');
           e.stunned = Math.max(e.stunned || 0, 14);
           if(window.CombatAudio) CombatAudio.enemyHurt(e); else SFX.hit();
         }
@@ -2008,14 +2018,14 @@ function update(dt) {
   // Enemy ↔ player collision
   for (const e of room.entities) {
     if (e.type !== 'enemy' || e.stunned > 0 || e.defeated) continue;
-    const er = { x: e._x + 4, y: e.y*TILE + 2, w: 24, h: 30 };
-    if (overlap(prRect, er) && p.invuln <= 0) {
+    const er = combatRect(e);
+    if (overlap(combatRect(p,true), er) && p.invuln <= 0) {
       p.hp--;
       p.invuln = 60;
       const knock = (p.x + p.w/2 < e._x + TILE/2) ? -1 : 1;
       p.vx = knock * 5.5;
       p.vy = -5.5;
-      flashSparks(p.x+p.w/2, p.y+p.h/2, '#c0392b');
+      flashSparks(p.x+p.w/2, p.y+p.h-90, '#c0392b');
       game.shake = 8;
       pulseHearts();
       if(window.CombatAudio) CombatAudio.contact(e); else SFX.hit();
@@ -2377,7 +2387,7 @@ function spawnProcesso(b) {
   const dir = (px < b._x + 18) ? -1 : 1;
   game.bossProjectiles.push({
     x: b._x + 18 + dir*16,
-    y: (b._y !== undefined ? b._y : b.y*TILE) + 14,
+    y: (b._y !== undefined ? b._y : b.y*TILE)+TILE-104,
     vx: dir * 3.4,
     vy: -4.7,
     gravity: 0.18,
@@ -2392,7 +2402,7 @@ function spawnDiscurso(b, dir) {
   dir = dir || b._dir || 1;
   game.bossProjectiles.push({
     x: b._x + 18 + dir * 18,
-    y: (b._y !== undefined ? b._y : b.y*TILE) + 14,
+    y: (b._y !== undefined ? b._y : b.y*TILE)+TILE-104,
     vx: dir * 5.6,
     vy: 0,
     gravity: 0,
@@ -2455,14 +2465,14 @@ function updateBossProjectiles() {
     for (const bp of game.bossProjectiles) {
       if (bp.life <= 0) continue;
       const bpr = { x: bp.x-10, y: bp.y-10, w:20, h:20 };
-      const pr = { x: p.x, y: p.y, w: p.w, h: p.h };
+      const pr = combatRect(p,true);
       if (overlap(bpr, pr)) {
         p.hp--;
         p.invuln = 60;
         const knock = (p.x + p.w/2 < bp.x) ? -1 : 1;
         p.vx = knock * 4.5;
         p.vy = -4.5;
-        flashSparks(p.x+p.w/2, p.y+p.h/2, '#c0392b');
+        flashSparks(p.x+p.w/2, p.y+p.h-90, '#c0392b');
         game.shake = 8;
         pulseHearts();
         if(window.CombatAudio) CombatAudio.playerHurt(); else SFX.hit();
@@ -3376,7 +3386,7 @@ function drawChiefPulse() {
   ctx.strokeStyle = `rgba(255,255,255,${game.chiefPulse*0.85})`;
   ctx.lineWidth = 4 * game.chiefPulse + 1;
   const cx = game.player.x + game.player.w/2;
-  const cy = game.player.y + game.player.h/2;
+  const cy = game.player.y + game.player.h-90;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
   ctx.strokeStyle = `rgba(212,160,23,${game.chiefPulse*0.5})`;
   ctx.lineWidth = 1.5;
@@ -3388,7 +3398,7 @@ const viewCamera={x:0,y:0,room:null,width:360,height:240};
 window.GameCamera=viewCamera;
 function render() {
   ctx.clearRect(0,0,cv.width,cv.height);
-  const cam=viewCamera,p=game.player,arena=game.room==='confronto';
+  const cam=viewCamera,p=game.player,arena=true;
   cam.width=arena?W:360;cam.height=cam.width*cv.height/cv.width;
   const targetX=arena?0:Math.max(0,Math.min(W-cam.width,p.x+p.w/2-cam.width/2+p.dir*35));
   const targetY=arena?(H-cam.height)/2:Math.max(0,Math.min(H-cam.height,p.y+p.h-cam.height*.78));
@@ -3786,7 +3796,7 @@ requestAnimationFrame(loop);
 </script>
 <script src="story.js?v=article-4"></script>
 <script src="art/hd2d/manifest.js?v=cloud-hair-1"></script>
-<script src="hd2d.js?v=perf-audio-2"></script>
+<script src="hd2d.js?v=proportions-3"></script>
 <script src="audio/manifest.js?v=boss-3"></script>
 <script src="audio/combat-manifest.js?v=1"></script>
 <script src="audio.js?v=combat-1"></script>
