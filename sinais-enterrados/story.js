@@ -6,6 +6,7 @@ const guard=ROOMS.forum.entities.find(e=>e.type==='guard');guard.dialog=lines('g
 const source=ROOMS.campo.entities.find(e=>e.name==='FONTE');source.dialog=lines('source');source.altDialog=lines('source_alt');source.displayName='ELIAS · FONTE';
 const boss=ROOMS.confronto.entities.find(e=>e.type==='boss');boss.intro=lines('confrontation');boss.shouts=story.shouts.map(l=>l.text);
 for(const room of Object.values(ROOMS))for(const e of room.entities)if(e.type==='clue')Object.assign(e,story.clues.find(c=>c.ord===e.ord));
+ROOMS.redacao.sub='jornal local · 16h12';ROOMS.confronto.sub='gabinete do deputado · 18h40';ROOMS.publicacao.sub='fechamento · 20h15';
 ROOMS.campo.sub='rua do centro de reabilitação · encontro com a fonte';
 const response='Carlão atribuiu o atraso ao alvará e disse que as cobranças dizem respeito à gestão do centro. Confirmou que o proprietário da Vértice foi seu sócio, mas negou vínculo atual. O instituto e a empresa não responderam até o fechamento.';
 function ending(){const found=new Set(game.clues.map(c=>c.ord));const complete=[2,3,5,6,8,10].every(n=>found.has(n));
